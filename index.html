@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>오늘 점심 뭐 먹지? · 직장인 점심 추천</title>
-<meta name="description" content="매일 다른 점심 메뉴를 추천하고, 먹은 메뉴를 기록해 중복 없이 골라주는 직장인용 점심 추천 도구." />
+<meta name="description" content="매일 다른 점심 메뉴를 추천하고, 먹은 메뉴를 기록해 중복 없이 골라주는 직장인용 점심 추천 도구. (한국어/English)" />
 
 <!-- =========================================================
      [Google AdSense] 연동 방법
@@ -55,7 +55,16 @@
   }
   .wrap { width: 100%; max-width: 460px; }
 
-  header { text-align: center; padding: 18px 0 6px; }
+  /* 언어 토글 */
+  .lang-bar { display: flex; justify-content: flex-end; }
+  .lang-btn {
+    background: #fff; border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 14px; font-family: inherit; font-size: 13px; font-weight: 700;
+    color: var(--brand-dark); cursor: pointer; transition: background .15s;
+  }
+  .lang-btn:hover { background: var(--brand-soft); }
+
+  header { text-align: center; padding: 8px 0 6px; }
   header h1 { font-size: 22px; letter-spacing: -0.5px; }
   header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
   .today { font-size: 12px; color: var(--brand-dark); font-weight: 600; margin-top: 6px; }
@@ -113,7 +122,7 @@
   .map-btn span { display: block; font-size: 20px; margin-bottom: 2px; }
 
   /* 설정 */
-  .settings { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+  .settings { display: flex; align-items: center; justify-content: space-between; font-size: 14px; gap: 10px; }
   .settings select {
     font-family: inherit; font-size: 14px; padding: 7px 10px;
     border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
@@ -147,15 +156,19 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="lang-bar">
+    <button class="lang-btn" id="langBtn">EN</button>
+  </div>
+
   <header>
-    <h1>🍱 오늘 점심 뭐 먹지?</h1>
-    <p>매일 다른 메뉴를 골라드려요. 먹은 건 기억해뒀다가 빼드릴게요.</p>
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
     <div class="today" id="todayLabel"></div>
   </header>
 
   <!-- 추천 결과 -->
   <div class="card pick" id="pickCard">
-    <div class="placeholder" id="pickPlaceholder">아래 버튼을 눌러 오늘의 메뉴를 추천받아 보세요!</div>
+    <div class="placeholder" id="pickPlaceholder"></div>
     <div id="pickResult" hidden>
       <span class="emoji" id="pickEmoji">🍚</span>
       <div class="name" id="pickName">메뉴</div>
@@ -165,37 +178,37 @@
 
   <!-- 액션 -->
   <div class="card">
-    <button class="btn btn-primary" id="recommendBtn">🎲 오늘의 점심 추천받기</button>
+    <button class="btn btn-primary" id="recommendBtn"></button>
     <div class="btn-row" id="actionRow" hidden>
-      <button class="btn btn-ghost" id="rerollBtn">🔄 다른 거</button>
-      <button class="btn btn-ok" id="eatBtn">✅ 이거 먹을래요</button>
+      <button class="btn btn-ghost" id="rerollBtn"></button>
+      <button class="btn btn-ok" id="eatBtn"></button>
     </div>
 
     <!-- 주변 음식점 찾기 -->
     <div class="maps" id="mapsBox" hidden>
-      <div class="label">내 주변에서 <b id="mapsMenu"></b> 음식점 찾기</div>
+      <div class="label" id="mapsLabel"></div>
       <div class="map-row">
-        <a class="map-btn" id="mapKakao" target="_blank" rel="noopener"><span>🟡</span>카카오맵</a>
-        <a class="map-btn" id="mapNaver" target="_blank" rel="noopener"><span>🟢</span>네이버지도</a>
-        <a class="map-btn" id="mapGoogle" target="_blank" rel="noopener"><span>🔵</span>구글맵</a>
+        <a class="map-btn" id="mapKakao" target="_blank" rel="noopener"><span>🟡</span><span id="lblKakao"></span></a>
+        <a class="map-btn" id="mapNaver" target="_blank" rel="noopener"><span>🟢</span><span id="lblNaver"></span></a>
+        <a class="map-btn" id="mapGoogle" target="_blank" rel="noopener"><span>🔵</span><span id="lblGoogle"></span></a>
       </div>
     </div>
   </div>
 
   <!-- 설정 -->
   <div class="card settings">
-    <label for="cooldown">최근 <b>며칠</b>간 먹은 메뉴는 추천 제외</label>
+    <label for="cooldown" id="settingsLabel"></label>
     <select id="cooldown">
-      <option value="3">3일</option>
-      <option value="5" selected>5일</option>
-      <option value="7">7일</option>
-      <option value="14">14일</option>
+      <option value="3"></option>
+      <option value="5" selected></option>
+      <option value="7"></option>
+      <option value="14"></option>
     </select>
   </div>
 
   <!-- 광고 슬롯 (AdSense) -->
   <div class="ad-slot" id="adSlot">
-    광고 영역 · AdSense 승인 후 이 자리에 광고가 표시됩니다
+    <span id="adLabel"></span>
     <!-- 승인 후 위 주석 처리된 <script> 를 활성화하고, 아래를 사용하세요:
     <ins class="adsbygoogle"
          style="display:block"
@@ -210,15 +223,13 @@
   <!-- 기록 -->
   <div class="card">
     <div class="sec-title">
-      <h2>📅 내가 먹은 점심</h2>
-      <button id="clearBtn">기록 지우기</button>
+      <h2 id="histTitle"></h2>
+      <button id="clearBtn"></button>
     </div>
     <ul class="hist-list" id="histList"></ul>
   </div>
 
-  <footer>
-    내 브라우저에만 저장돼요(서버 전송 없음) · 매일 새 메뉴를 골라보세요 🍳
-  </footer>
+  <footer id="footer"></footer>
 </div>
 
 <script>
@@ -230,7 +241,6 @@
   var GA_MEASUREMENT_ID = "G-Y9PY4L9DF7";
 
   function loadGA() {
-    // ID를 아직 안 넣었으면(기본값/G-로 시작 안 함) 비활성화
     if (!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID.indexOf("G-") !== 0) return;
     var s = document.createElement("script");
     s.async = true;
@@ -241,241 +251,307 @@
     window.gtag("js", new Date());
     window.gtag("config", GA_MEASUREMENT_ID);
   }
-
-  // 커스텀 이벤트 전송 (GA 미설정 시 무시됨)
   function track(eventName, params) {
     if (typeof window.gtag === "function") window.gtag("event", eventName, params || {});
   }
 
-  // ---- 메뉴 데이터 (카테고리별) ----
+  // ---- 카테고리 (다국어) ----
+  var CATS = {
+    korean:   { ko: "한식",   en: "Korean" },
+    snack:    { ko: "분식",   en: "Snacks" },
+    japanese: { ko: "일식",   en: "Japanese" },
+    chinese:  { ko: "중식",   en: "Chinese" },
+    asian:    { ko: "아시안", en: "Asian" },
+    western:  { ko: "양식",   en: "Western" }
+  };
+
+  // ---- 메뉴 데이터 (id로 식별, 표시명은 다국어) ----
   var MENUS = [
-    { name: "김치찌개", emoji: "🍲", cat: "한식" },
-    { name: "된장찌개", emoji: "🥘", cat: "한식" },
-    { name: "제육볶음", emoji: "🥓", cat: "한식" },
-    { name: "비빔밥", emoji: "🍚", cat: "한식" },
-    { name: "불고기", emoji: "🥩", cat: "한식" },
-    { name: "순두부찌개", emoji: "🍜", cat: "한식" },
-    { name: "삼겹살", emoji: "🥓", cat: "한식" },
-    { name: "갈비탕", emoji: "🍲", cat: "한식" },
-    { name: "설렁탕", emoji: "🍲", cat: "한식" },
-    { name: "냉면", emoji: "🍜", cat: "한식" },
-    { name: "칼국수", emoji: "🍜", cat: "한식" },
-    { name: "김밥", emoji: "🍙", cat: "분식" },
-    { name: "떡볶이", emoji: "🌶️", cat: "분식" },
-    { name: "라면", emoji: "🍜", cat: "분식" },
-    { name: "돈까스", emoji: "🍖", cat: "일식" },
-    { name: "초밥", emoji: "🍣", cat: "일식" },
-    { name: "우동", emoji: "🍲", cat: "일식" },
-    { name: "라멘", emoji: "🍜", cat: "일식" },
-    { name: "규동(소고기덮밥)", emoji: "🍱", cat: "일식" },
-    { name: "카레", emoji: "🍛", cat: "일식" },
-    { name: "짜장면", emoji: "🍜", cat: "중식" },
-    { name: "짬뽕", emoji: "🍲", cat: "중식" },
-    { name: "탕수육", emoji: "🍖", cat: "중식" },
-    { name: "마라탕", emoji: "🌶️", cat: "중식" },
-    { name: "볶음밥", emoji: "🍚", cat: "중식" },
-    { name: "쌀국수", emoji: "🍜", cat: "아시안" },
-    { name: "팟타이", emoji: "🍝", cat: "아시안" },
-    { name: "분짜", emoji: "🥗", cat: "아시안" },
-    { name: "햄버거", emoji: "🍔", cat: "양식" },
-    { name: "파스타", emoji: "🍝", cat: "양식" },
-    { name: "피자", emoji: "🍕", cat: "양식" },
-    { name: "스테이크", emoji: "🥩", cat: "양식" },
-    { name: "샐러드", emoji: "🥗", cat: "양식" },
-    { name: "리조또", emoji: "🍚", cat: "양식" },
-    { name: "샌드위치", emoji: "🥪", cat: "양식" },
-    { name: "부대찌개", emoji: "🍲", cat: "한식" },
-    { name: "닭갈비", emoji: "🐔", cat: "한식" },
-    { name: "찜닭", emoji: "🍗", cat: "한식" },
-    { name: "국밥", emoji: "🍚", cat: "한식" },
-    { name: "쭈꾸미볶음", emoji: "🦑", cat: "한식" },
-    { name: "곱창", emoji: "🍢", cat: "한식" },
-    { name: "보쌈", emoji: "🥬", cat: "한식" },
-    { name: "백반정식", emoji: "🍱", cat: "한식" },
-    { name: "타코", emoji: "🌮", cat: "양식" },
-    { name: "포케", emoji: "🥗", cat: "아시안" }
+    { id: "kimchi_stew",   ko: "김치찌개",        en: "Kimchi Stew",            cat: "korean",   emoji: "🍲" },
+    { id: "doenjang_stew", ko: "된장찌개",        en: "Soybean Paste Stew",     cat: "korean",   emoji: "🥘" },
+    { id: "jeyuk",         ko: "제육볶음",        en: "Spicy Stir-fried Pork",  cat: "korean",   emoji: "🥓" },
+    { id: "bibimbap",      ko: "비빔밥",          en: "Bibimbap",               cat: "korean",   emoji: "🍚" },
+    { id: "bulgogi",       ko: "불고기",          en: "Bulgogi",                cat: "korean",   emoji: "🥩" },
+    { id: "sundubu",       ko: "순두부찌개",      en: "Soft Tofu Stew",         cat: "korean",   emoji: "🍜" },
+    { id: "samgyeopsal",   ko: "삼겹살",          en: "Pork Belly BBQ",         cat: "korean",   emoji: "🥓" },
+    { id: "galbitang",     ko: "갈비탕",          en: "Short Rib Soup",         cat: "korean",   emoji: "🍲" },
+    { id: "seolleongtang", ko: "설렁탕",          en: "Ox Bone Soup",           cat: "korean",   emoji: "🍲" },
+    { id: "naengmyeon",    ko: "냉면",            en: "Cold Noodles",           cat: "korean",   emoji: "🍜" },
+    { id: "kalguksu",      ko: "칼국수",          en: "Knife-cut Noodles",      cat: "korean",   emoji: "🍜" },
+    { id: "gimbap",        ko: "김밥",            en: "Gimbap",                 cat: "snack",    emoji: "🍙" },
+    { id: "tteokbokki",    ko: "떡볶이",          en: "Tteokbokki",             cat: "snack",    emoji: "🌶️" },
+    { id: "ramyeon",       ko: "라면",            en: "Ramyeon",                cat: "snack",    emoji: "🍜" },
+    { id: "donkatsu",      ko: "돈까스",          en: "Pork Cutlet",            cat: "japanese", emoji: "🍖" },
+    { id: "sushi",         ko: "초밥",            en: "Sushi",                  cat: "japanese", emoji: "🍣" },
+    { id: "udon",          ko: "우동",            en: "Udon",                   cat: "japanese", emoji: "🍲" },
+    { id: "ramen",         ko: "라멘",            en: "Ramen",                  cat: "japanese", emoji: "🍜" },
+    { id: "gyudon",        ko: "규동(소고기덮밥)", en: "Gyudon (Beef Bowl)",     cat: "japanese", emoji: "🍱" },
+    { id: "curry",         ko: "카레",            en: "Japanese Curry",         cat: "japanese", emoji: "🍛" },
+    { id: "jjajang",       ko: "짜장면",          en: "Jjajangmyeon",           cat: "chinese",  emoji: "🍜" },
+    { id: "jjamppong",     ko: "짬뽕",            en: "Jjamppong",              cat: "chinese",  emoji: "🍲" },
+    { id: "tangsuyuk",     ko: "탕수육",          en: "Sweet & Sour Pork",      cat: "chinese",  emoji: "🍖" },
+    { id: "malatang",      ko: "마라탕",          en: "Malatang",               cat: "chinese",  emoji: "🌶️" },
+    { id: "fried_rice",    ko: "볶음밥",          en: "Fried Rice",             cat: "chinese",  emoji: "🍚" },
+    { id: "pho",           ko: "쌀국수",          en: "Pho",                    cat: "asian",    emoji: "🍜" },
+    { id: "pad_thai",      ko: "팟타이",          en: "Pad Thai",               cat: "asian",    emoji: "🍝" },
+    { id: "bun_cha",       ko: "분짜",            en: "Bun Cha",                cat: "asian",    emoji: "🥗" },
+    { id: "burger",        ko: "햄버거",          en: "Burger",                 cat: "western",  emoji: "🍔" },
+    { id: "pasta",         ko: "파스타",          en: "Pasta",                  cat: "western",  emoji: "🍝" },
+    { id: "pizza",         ko: "피자",            en: "Pizza",                  cat: "western",  emoji: "🍕" },
+    { id: "steak",         ko: "스테이크",        en: "Steak",                  cat: "western",  emoji: "🥩" },
+    { id: "salad",         ko: "샐러드",          en: "Salad",                  cat: "western",  emoji: "🥗" },
+    { id: "risotto",       ko: "리조또",          en: "Risotto",                cat: "western",  emoji: "🍚" },
+    { id: "sandwich",      ko: "샌드위치",        en: "Sandwich",               cat: "western",  emoji: "🥪" },
+    { id: "budae",         ko: "부대찌개",        en: "Army Stew",              cat: "korean",   emoji: "🍲" },
+    { id: "dakgalbi",      ko: "닭갈비",          en: "Spicy Stir-fried Chicken", cat: "korean", emoji: "🐔" },
+    { id: "jjimdak",       ko: "찜닭",            en: "Braised Chicken",        cat: "korean",   emoji: "🍗" },
+    { id: "gukbap",        ko: "국밥",            en: "Soup with Rice",         cat: "korean",   emoji: "🍚" },
+    { id: "jjukkumi",      ko: "쭈꾸미볶음",      en: "Spicy Stir-fried Octopus", cat: "korean", emoji: "🦑" },
+    { id: "gopchang",      ko: "곱창",            en: "Grilled Tripe",          cat: "korean",   emoji: "🍢" },
+    { id: "bossam",        ko: "보쌈",            en: "Bossam (Boiled Pork)",   cat: "korean",   emoji: "🥬" },
+    { id: "baekban",       ko: "백반정식",        en: "Korean Set Meal",        cat: "korean",   emoji: "🍱" },
+    { id: "taco",          ko: "타코",            en: "Taco",                   cat: "western",  emoji: "🌮" },
+    { id: "poke",          ko: "포케",            en: "Poke Bowl",              cat: "asian",    emoji: "🥗" }
   ];
+
+  // ---- UI 문구 (다국어) ----
+  var STR = {
+    ko: {
+      htmlLang: "ko",
+      docTitle: "오늘 점심 뭐 먹지? · 직장인 점심 추천",
+      langBtn: "EN",
+      title: "🍱 오늘 점심 뭐 먹지?",
+      subtitle: "매일 다른 메뉴를 골라드려요. 먹은 건 기억해뒀다가 빼드릴게요.",
+      placeholder: "아래 버튼을 눌러 오늘의 메뉴를 추천받아 보세요!",
+      recommend: "🎲 오늘의 점심 추천받기",
+      recommendAgain: "🎲 다시 추천받기",
+      other: "🔄 다른 거",
+      eat: "✅ 이거 먹을래요",
+      saved: "✅ 저장됨!",
+      mapsLabel: function (n) { return "내 주변에서 <b>" + n + "</b> 음식점 찾기"; },
+      kakao: "카카오맵", naver: "네이버지도", google: "구글맵",
+      settings: function (n) { return "최근 <b>" + n + "</b>간 먹은 메뉴는 추천 제외"; },
+      cooldownOpt: function (n) { return n + "일"; },
+      adLabel: "광고 영역 · AdSense 승인 후 이 자리에 광고가 표시됩니다",
+      histTitle: "📅 내가 먹은 점심",
+      clear: "기록 지우기",
+      empty: "아직 기록이 없어요. 메뉴를 골라 저장해 보세요!",
+      footer: "내 브라우저에만 저장돼요(서버 전송 없음) · 매일 새 메뉴를 골라보세요 🍳",
+      confirmClear: "점심 기록을 모두 지울까요?",
+      today: "오늘", yesterday: "어제",
+      locale: "ko-KR"
+    },
+    en: {
+      htmlLang: "en",
+      docTitle: "What's for lunch today? · Lunch picker for workers",
+      langBtn: "한국어",
+      title: "🍱 What's for lunch today?",
+      subtitle: "We pick a different menu each day and remember what you've had.",
+      placeholder: "Tap the button below to get today's lunch pick!",
+      recommend: "🎲 Pick today's lunch",
+      recommendAgain: "🎲 Pick again",
+      other: "🔄 Another",
+      eat: "✅ I'll eat this",
+      saved: "✅ Saved!",
+      mapsLabel: function (n) { return "Find <b>" + n + "</b> near you"; },
+      kakao: "Kakao Map", naver: "Naver Map", google: "Google Maps",
+      settings: function (n) { return "Exclude menus eaten in the last <b>" + n + "</b>"; },
+      cooldownOpt: function (n) { return n + " days"; },
+      adLabel: "Ad space · Your AdSense ad will appear here after approval",
+      histTitle: "📅 My lunch history",
+      clear: "Clear history",
+      empty: "No history yet. Pick a menu and save it!",
+      footer: "Saved only in your browser (no server) · Pick a fresh menu every day 🍳",
+      confirmClear: "Clear all lunch history?",
+      today: "Today", yesterday: "Yesterday",
+      locale: "en-US"
+    }
+  };
 
   var HIST_KEY = "lunchpick_history_v1";
   var SET_KEY = "lunchpick_settings_v1";
 
   // ---- 상태 ----
-  var current = null;       // 현재 화면에 추천된 메뉴
-  var sessionShown = [];    // 이번 세션에 "다른 거"로 거쳐간 메뉴 이름들
+  var lang = "ko";
+  var current = null;       // 현재 화면에 추천된 메뉴 객체
+  var sessionShown = [];    // 이번 세션에 거쳐간 메뉴 id
 
   // ---- DOM ----
   var $ = function (id) { return document.getElementById(id); };
-  var pickPlaceholder = $("pickPlaceholder"),
-      pickResult = $("pickResult"),
-      pickEmoji = $("pickEmoji"),
-      pickName = $("pickName"),
-      pickCat = $("pickCat"),
-      recommendBtn = $("recommendBtn"),
-      actionRow = $("actionRow"),
-      rerollBtn = $("rerollBtn"),
-      eatBtn = $("eatBtn"),
-      mapsBox = $("mapsBox"),
-      mapsMenu = $("mapsMenu"),
-      cooldownSel = $("cooldown"),
-      histList = $("histList"),
-      clearBtn = $("clearBtn"),
-      todayLabel = $("todayLabel");
 
-  // ---- 저장소 유틸 ----
-  function loadHistory() {
-    try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; }
-    catch (e) { return []; }
-  }
-  function saveHistory(h) {
-    try { localStorage.setItem(HIST_KEY, JSON.stringify(h)); } catch (e) {}
-  }
-  function loadSettings() {
-    try { return JSON.parse(localStorage.getItem(SET_KEY)) || {}; }
-    catch (e) { return {}; }
-  }
-  function saveSettings(s) {
-    try { localStorage.setItem(SET_KEY, JSON.stringify(s)); } catch (e) {}
-  }
+  // ---- 저장소 ----
+  function loadHistory() { try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch (e) { return []; } }
+  function saveHistory(h) { try { localStorage.setItem(HIST_KEY, JSON.stringify(h)); } catch (e) {} }
+  function loadSettings() { try { return JSON.parse(localStorage.getItem(SET_KEY)) || {}; } catch (e) { return {}; } }
+  function saveSettings(s) { try { localStorage.setItem(SET_KEY, JSON.stringify(s)); } catch (e) {} }
 
-  // ---- 날짜 유틸 ----
-  function todayStr() {
-    var d = new Date();
-    return d.getFullYear() + "-" +
-      String(d.getMonth() + 1).padStart(2, "0") + "-" +
-      String(d.getDate()).padStart(2, "0");
+  // ---- 다국어 헬퍼 ----
+  function t() { return STR[lang]; }
+  function menuName(m) { return m[lang] || m.ko; }
+  function catName(m) { var c = CATS[m.cat]; return c ? (c[lang] || c.ko) : ""; }
+  function findMenu(id) { for (var i = 0; i < MENUS.length; i++) if (MENUS[i].id === id) return MENUS[i]; return null; }
+
+  // ---- 날짜 ----
+  function dstr(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
-  function daysAgoStr(n) {
-    var d = new Date();
-    d.setDate(d.getDate() - n);
-    return d.getFullYear() + "-" +
-      String(d.getMonth() + 1).padStart(2, "0") + "-" +
-      String(d.getDate()).padStart(2, "0");
-  }
+  function todayStr() { return dstr(new Date()); }
+  function daysAgoStr(n) { var d = new Date(); d.setDate(d.getDate() - n); return dstr(d); }
   function prettyDate(s) {
+    if (s === todayStr()) return t().today;
+    if (s === daysAgoStr(1)) return t().yesterday;
     var p = s.split("-");
-    var wd = ["일", "월", "화", "수", "목", "금", "토"];
     var d = new Date(+p[0], +p[1] - 1, +p[2]);
-    if (s === todayStr()) return "오늘";
-    if (s === daysAgoStr(1)) return "어제";
-    return (+p[1]) + "/" + (+p[2]) + " (" + wd[d.getDay()] + ")";
+    return d.toLocaleDateString(t().locale, { month: "short", day: "numeric", weekday: "short" });
   }
 
   // ---- 최근 먹은 메뉴(쿨다운) ----
-  function recentMenuNames() {
-    var days = parseInt(cooldownSel.value, 10) || 5;
-    var cutoff = daysAgoStr(days - 1); // 오늘 포함 최근 days일
-    var h = loadHistory();
-    var names = {};
-    h.forEach(function (item) {
-      if (item.date >= cutoff) names[item.name] = true;
-    });
-    return names;
+  function recentMenuIds() {
+    var days = parseInt($("cooldown").value, 10) || 5;
+    var cutoff = daysAgoStr(days - 1);
+    var ids = {};
+    loadHistory().forEach(function (item) { if (item.date >= cutoff && item.id) ids[item.id] = true; });
+    return ids;
   }
 
   // ---- 추천 ----
   function pickMenu() {
-    var recent = recentMenuNames();
-    // 1순위: 최근에도 안 먹고, 이번 세션에 안 보여준 메뉴
-    var pool = MENUS.filter(function (m) {
-      return !recent[m.name] && sessionShown.indexOf(m.name) === -1;
-    });
-    // 2순위: 최근에 안 먹은 메뉴 (세션 제외는 풀어줌)
-    if (pool.length === 0) {
-      pool = MENUS.filter(function (m) { return !recent[m.name]; });
-    }
-    // 3순위: 그래도 없으면 전체
+    var recent = recentMenuIds();
+    var pool = MENUS.filter(function (m) { return !recent[m.id] && sessionShown.indexOf(m.id) === -1; });
+    if (pool.length === 0) pool = MENUS.filter(function (m) { return !recent[m.id]; });
     if (pool.length === 0) pool = MENUS.slice();
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
   function showPick(menu) {
     current = menu;
-    if (sessionShown.indexOf(menu.name) === -1) sessionShown.push(menu.name);
-
-    pickPlaceholder.hidden = true;
-    pickResult.hidden = false;
-    // 이모지 재애니메이션
-    pickEmoji.style.animation = "none";
-    void pickEmoji.offsetWidth;
-    pickEmoji.style.animation = "";
-    pickEmoji.textContent = menu.emoji;
-    pickName.textContent = menu.name;
-    pickCat.textContent = menu.cat;
-
-    recommendBtn.textContent = "🎲 다시 추천받기";
-    actionRow.hidden = false;
-    updateMaps(menu.name);
-    track("recommend_menu", { menu_name: menu.name, menu_category: menu.cat });
+    if (sessionShown.indexOf(menu.id) === -1) sessionShown.push(menu.id);
+    renderPick();
+    track("recommend_menu", { menu_id: menu.id, menu_name: menu.ko, menu_category: menu.cat });
   }
 
-  // ---- 주변 음식점 지도 검색 ----
-  function updateMaps(name) {
-    var q = encodeURIComponent(name);
-    mapsMenu.textContent = name;
+  function renderPick() {
+    if (!current) return;
+    $("pickPlaceholder").hidden = true;
+    $("pickResult").hidden = false;
+    var emo = $("pickEmoji");
+    emo.style.animation = "none"; void emo.offsetWidth; emo.style.animation = "";
+    emo.textContent = current.emoji;
+    $("pickName").textContent = menuName(current);
+    $("pickCat").textContent = catName(current);
+    $("recommendBtn").textContent = t().recommendAgain;
+    $("actionRow").hidden = false;
+    renderMaps();
+  }
+
+  // ---- 주변 음식점 (검색은 한국어 키워드로: 한국 지도 서비스 결과가 정확) ----
+  function renderMaps() {
+    if (!current) return;
+    var q = encodeURIComponent(current.ko);
     $("mapKakao").href = "https://map.kakao.com/?q=" + q;
     $("mapNaver").href = "https://m.map.naver.com/search2/search.naver?query=" + q;
     $("mapGoogle").href = "https://www.google.com/maps/search/" + q;
-    mapsBox.hidden = false;
+    $("mapsLabel").innerHTML = t().mapsLabel(menuName(current));
+    $("mapsBox").hidden = false;
   }
 
-  // ---- 기록 저장 / 렌더 ----
+  // ---- 저장 / 기록 ----
   function eatCurrent() {
     if (!current) return;
     var h = loadHistory();
     var today = todayStr();
-    // 오늘 기록이 있으면 교체, 없으면 추가
     h = h.filter(function (item) { return item.date !== today; });
-    h.unshift({ date: today, name: current.name, emoji: current.emoji });
+    h.unshift({ date: today, id: current.id, name: current.ko, emoji: current.emoji });
     saveHistory(h);
     renderHistory();
-    track("save_menu", { menu_name: current.name, menu_category: current.cat });
-
-    eatBtn.textContent = "✅ 저장됨!";
-    setTimeout(function () { eatBtn.textContent = "✅ 이거 먹을래요"; }, 1200);
+    track("save_menu", { menu_id: current.id, menu_name: current.ko, menu_category: current.cat });
+    $("eatBtn").textContent = t().saved;
+    setTimeout(function () { $("eatBtn").textContent = t().eat; }, 1200);
   }
 
   function renderHistory() {
     var h = loadHistory();
-    histList.innerHTML = "";
+    var list = $("histList");
+    list.innerHTML = "";
     if (h.length === 0) {
       var li = document.createElement("li");
-      li.className = "empty";
-      li.textContent = "아직 기록이 없어요. 메뉴를 골라 저장해 보세요!";
-      histList.appendChild(li);
-      return;
+      li.className = "empty"; li.textContent = t().empty;
+      list.appendChild(li); return;
     }
     h.slice(0, 14).forEach(function (item) {
+      var m = item.id ? findMenu(item.id) : null;
+      var label = m ? menuName(m) : (item.name || "");
       var li = document.createElement("li");
       li.className = "hist-item";
       var e = document.createElement("span"); e.className = "he"; e.textContent = item.emoji || "🍽️";
-      var n = document.createElement("span"); n.textContent = item.name;
+      var n = document.createElement("span"); n.textContent = label;
       var d = document.createElement("span"); d.className = "hd"; d.textContent = prettyDate(item.date);
       li.appendChild(e); li.appendChild(n); li.appendChild(d);
-      histList.appendChild(li);
+      list.appendChild(li);
     });
   }
 
+  // ---- 언어 적용 ----
+  function applyLang() {
+    var s = t();
+    document.documentElement.lang = s.htmlLang;
+    document.title = s.docTitle;
+    $("langBtn").textContent = s.langBtn;
+    $("title").textContent = s.title;
+    $("subtitle").textContent = s.subtitle;
+    $("pickPlaceholder").textContent = s.placeholder;
+    $("recommendBtn").textContent = current ? s.recommendAgain : s.recommend;
+    $("rerollBtn").textContent = s.other;
+    $("eatBtn").textContent = s.eat;
+    $("lblKakao").textContent = s.kakao;
+    $("lblNaver").textContent = s.naver;
+    $("lblGoogle").textContent = s.google;
+    $("settingsLabel").innerHTML = s.settings(s.cooldownOpt($("cooldown").value));
+    var opts = $("cooldown").options;
+    for (var i = 0; i < opts.length; i++) opts[i].textContent = s.cooldownOpt(opts[i].value);
+    $("adLabel").textContent = s.adLabel;
+    $("histTitle").textContent = s.histTitle;
+    $("clearBtn").textContent = s.clear;
+    $("footer").textContent = s.footer;
+
+    // 날짜 라벨
+    var now = new Date();
+    $("todayLabel").textContent = now.toLocaleDateString(s.locale, { year: undefined, month: "long", day: "numeric", weekday: "long" });
+
+    if (current) renderPick();
+    renderHistory();
+  }
+
+  function setLang(next) {
+    lang = next;
+    var s = loadSettings(); s.lang = next; saveSettings(s);
+    applyLang();
+    track("change_language", { language: next });
+  }
+
   // ---- 이벤트 ----
-  recommendBtn.addEventListener("click", function () { showPick(pickMenu()); });
-  rerollBtn.addEventListener("click", function () { showPick(pickMenu()); });
-  eatBtn.addEventListener("click", eatCurrent);
-  clearBtn.addEventListener("click", function () {
-    if (confirm("점심 기록을 모두 지울까요?")) { saveHistory([]); renderHistory(); }
+  $("recommendBtn").addEventListener("click", function () { showPick(pickMenu()); });
+  $("rerollBtn").addEventListener("click", function () { showPick(pickMenu()); });
+  $("eatBtn").addEventListener("click", eatCurrent);
+  $("clearBtn").addEventListener("click", function () {
+    if (confirm(t().confirmClear)) { saveHistory([]); renderHistory(); }
   });
-  cooldownSel.addEventListener("change", function () {
-    var s = loadSettings(); s.cooldown = cooldownSel.value; saveSettings(s);
+  $("cooldown").addEventListener("change", function () {
+    var s = loadSettings(); s.cooldown = $("cooldown").value; saveSettings(s);
     sessionShown = [];
+    $("settingsLabel").innerHTML = t().settings(t().cooldownOpt($("cooldown").value));
   });
+  $("langBtn").addEventListener("click", function () { setLang(lang === "ko" ? "en" : "ko"); });
 
   // ---- 초기화 ----
   function init() {
     loadGA();
     var s = loadSettings();
-    if (s.cooldown) cooldownSel.value = s.cooldown;
-    var wd = ["일", "월", "화", "수", "목", "금", "토"];
-    var now = new Date();
-    todayLabel.textContent = (now.getMonth() + 1) + "월 " + now.getDate() + "일 " + wd[now.getDay()] + "요일";
-    renderHistory();
+    if (s.cooldown) $("cooldown").value = s.cooldown;
+    // 언어: 저장값 > 브라우저 언어 > 한국어
+    if (s.lang === "ko" || s.lang === "en") lang = s.lang;
+    else lang = (navigator.language || "ko").toLowerCase().indexOf("ko") === 0 ? "ko" : "en";
+    applyLang();
   }
   init();
 })();
