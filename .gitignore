@@ -1,0 +1,4 @@
+# 로컬 미리보기/에디터 설정 (배포 불필요)
+.claude/
+.DS_Store
+Thumbs.db

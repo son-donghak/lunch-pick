@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>오늘 점심 뭐 먹지? · 직장인 점심 추천</title>
+<meta name="description" content="매일 다른 점심 메뉴를 추천하고, 먹은 메뉴를 기록해 중복 없이 골라주는 직장인용 점심 추천 도구." />
+
+<!-- =========================================================
+     [Google AdSense] 연동 방법
+     1) https://adsense.google.com 에서 사이트 등록 후 승인받기
+     2) 아래 ca-pub-0000000000000000 을 본인 게시자 ID로 교체
+     3) 페이지 하단 <ins class="adsbygoogle"> 의 data-ad-slot 값도 교체
+     승인 전에는 광고가 비어 보일 수 있어요(정상).
+========================================================== -->
+<!--
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
+        crossorigin="anonymous"></script>
+-->
+
+<style>
+  :root {
+    --bg: #fff7f0;
+    --card: #ffffff;
+    --ink: #2b2622;
+    --muted: #8a807a;
+    --line: #f0e6dc;
+    --brand: #ff6b35;
+    --brand-dark: #e85220;
+    --brand-soft: #fff0e8;
+    --ok: #2f9e57;
+    --shadow: 0 10px 30px rgba(255, 107, 53, 0.12);
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+      "Malgun Gothic", "Noto Sans KR", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+  }
+  .wrap { width: 100%; max-width: 460px; }
+
+  header { text-align: center; padding: 18px 0 6px; }
+  header h1 { font-size: 22px; letter-spacing: -0.5px; }
+  header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .today { font-size: 12px; color: var(--brand-dark); font-weight: 600; margin-top: 6px; }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    margin-top: 16px;
+  }
+
+  /* 추천 카드 */
+  .pick { text-align: center; padding: 30px 22px; }
+  .pick .emoji {
+    font-size: 76px;
+    line-height: 1;
+    display: block;
+    margin-bottom: 10px;
+    animation: pop 0.35s cubic-bezier(.2,1.3,.5,1);
+  }
+  @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .pick .name { font-size: 30px; font-weight: 800; letter-spacing: -0.8px; }
+  .pick .cat { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .pick .placeholder { color: var(--muted); font-size: 16px; padding: 20px 0; }
+
+  /* 버튼 */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: none; border-radius: 12px; cursor: pointer;
+    font-family: inherit; font-weight: 700; font-size: 16px;
+    padding: 14px 18px; width: 100%;
+    transition: transform .08s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 6px 16px rgba(255,107,53,.35); }
+  .btn-primary:hover { background: var(--brand-dark); }
+  .btn-ghost { background: var(--brand-soft); color: var(--brand-dark); }
+  .btn-ghost:hover { background: #ffe3d4; }
+  .btn-ok { background: var(--ok); color: #fff; }
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+  .btn-row .btn { font-size: 15px; padding: 13px 10px; }
+
+  /* 지도 검색 */
+  .maps { margin-top: 16px; }
+  .maps .label { font-size: 13px; color: var(--muted); margin-bottom: 8px; text-align: center; }
+  .map-row { display: flex; gap: 8px; }
+  .map-btn {
+    flex: 1; text-align: center; text-decoration: none;
+    border: 1px solid var(--line); border-radius: 11px;
+    padding: 11px 6px; font-size: 13px; font-weight: 700; color: var(--ink);
+    background: #fff; transition: background .15s;
+  }
+  .map-btn:hover { background: var(--bg); }
+  .map-btn span { display: block; font-size: 20px; margin-bottom: 2px; }
+
+  /* 설정 */
+  .settings { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+  .settings select {
+    font-family: inherit; font-size: 14px; padding: 7px 10px;
+    border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
+  }
+
+  /* 기록 */
+  .sec-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .sec-title h2 { font-size: 15px; }
+  .sec-title button { background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer; font-family: inherit; }
+  .sec-title button:hover { color: var(--brand-dark); }
+  .hist-list { list-style: none; }
+  .hist-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px;
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-item .he { font-size: 22px; }
+  .hist-item .hd { color: var(--muted); font-size: 12px; margin-left: auto; }
+  .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 16px 0; }
+
+  /* 광고 슬롯 */
+  .ad-slot {
+    margin-top: 16px; min-height: 100px;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; border: 1px dashed var(--line); border-radius: 14px;
+    color: var(--muted); font-size: 12px; text-align: center; padding: 12px;
+  }
+
+  footer { text-align: center; color: var(--muted); font-size: 11px; padding: 22px 0 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🍱 오늘 점심 뭐 먹지?</h1>
+    <p>매일 다른 메뉴를 골라드려요. 먹은 건 기억해뒀다가 빼드릴게요.</p>
+    <div class="today" id="todayLabel"></div>
+  </header>
+
+  <!-- 추천 결과 -->
+  <div class="card pick" id="pickCard">
+    <div class="placeholder" id="pickPlaceholder">아래 버튼을 눌러 오늘의 메뉴를 추천받아 보세요!</div>
+    <div id="pickResult" hidden>
+      <span class="emoji" id="pickEmoji">🍚</span>
+      <div class="name" id="pickName">메뉴</div>
+      <div class="cat" id="pickCat"></div>
+    </div>
+  </div>
+
+  <!-- 액션 -->
+  <div class="card">
+    <button class="btn btn-primary" id="recommendBtn">🎲 오늘의 점심 추천받기</button>
+    <div class="btn-row" id="actionRow" hidden>
+      <button class="btn btn-ghost" id="rerollBtn">🔄 다른 거</button>
+      <button class="btn btn-ok" id="eatBtn">✅ 이거 먹을래요</button>
+    </div>
+
+    <!-- 주변 음식점 찾기 -->
+    <div class="maps" id="mapsBox" hidden>
+      <div class="label">내 주변에서 <b id="mapsMenu"></b> 음식점 찾기</div>
+      <div class="map-row">
+        <a class="map-btn" id="mapKakao" target="_blank" rel="noopener"><span>🟡</span>카카오맵</a>
+        <a class="map-btn" id="mapNaver" target="_blank" rel="noopener"><span>🟢</span>네이버지도</a>
+        <a class="map-btn" id="mapGoogle" target="_blank" rel="noopener"><span>🔵</span>구글맵</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 설정 -->
+  <div class="card settings">
+    <label for="cooldown">최근 <b>며칠</b>간 먹은 메뉴는 추천 제외</label>
+    <select id="cooldown">
+      <option value="3">3일</option>
+      <option value="5" selected>5일</option>
+      <option value="7">7일</option>
+      <option value="14">14일</option>
+    </select>
+  </div>
+
+  <!-- 광고 슬롯 (AdSense) -->
+  <div class="ad-slot" id="adSlot">
+    광고 영역 · AdSense 승인 후 이 자리에 광고가 표시됩니다
+    <!-- 승인 후 위 주석 처리된 <script> 를 활성화하고, 아래를 사용하세요:
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-0000000000000000"
+         data-ad-slot="0000000000"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    -->
+  </div>
+
+  <!-- 기록 -->
+  <div class="card">
+    <div class="sec-title">
+      <h2>📅 내가 먹은 점심</h2>
+      <button id="clearBtn">기록 지우기</button>
+    </div>
+    <ul class="hist-list" id="histList"></ul>
+  </div>
+
+  <footer>
+    내 브라우저에만 저장돼요(서버 전송 없음) · 매일 새 메뉴를 골라보세요 🍳
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- 메뉴 데이터 (카테고리별) ----
+  var MENUS = [
+    { name: "김치찌개", emoji: "🍲", cat: "한식" },
+    { name: "된장찌개", emoji: "🥘", cat: "한식" },
+    { name: "제육볶음", emoji: "🥓", cat: "한식" },
+    { name: "비빔밥", emoji: "🍚", cat: "한식" },
+    { name: "불고기", emoji: "🥩", cat: "한식" },
+    { name: "순두부찌개", emoji: "🍜", cat: "한식" },
+    { name: "삼겹살", emoji: "🥓", cat: "한식" },
+    { name: "갈비탕", emoji: "🍲", cat: "한식" },
+    { name: "설렁탕", emoji: "🍲", cat: "한식" },
+    { name: "냉면", emoji: "🍜", cat: "한식" },
+    { name: "칼국수", emoji: "🍜", cat: "한식" },
+    { name: "김밥", emoji: "🍙", cat: "분식" },
+    { name: "떡볶이", emoji: "🌶️", cat: "분식" },
+    { name: "라면", emoji: "🍜", cat: "분식" },
+    { name: "돈까스", emoji: "🍖", cat: "일식" },
+    { name: "초밥", emoji: "🍣", cat: "일식" },
+    { name: "우동", emoji: "🍲", cat: "일식" },
+    { name: "라멘", emoji: "🍜", cat: "일식" },
+    { name: "규동(소고기덮밥)", emoji: "🍱", cat: "일식" },
+    { name: "카레", emoji: "🍛", cat: "일식" },
+    { name: "짜장면", emoji: "🍜", cat: "중식" },
+    { name: "짬뽕", emoji: "🍲", cat: "중식" },
+    { name: "탕수육", emoji: "🍖", cat: "중식" },
+    { name: "마라탕", emoji: "🌶️", cat: "중식" },
+    { name: "볶음밥", emoji: "🍚", cat: "중식" },
+    { name: "쌀국수", emoji: "🍜", cat: "아시안" },
+    { name: "팟타이", emoji: "🍝", cat: "아시안" },
+    { name: "분짜", emoji: "🥗", cat: "아시안" },
+    { name: "햄버거", emoji: "🍔", cat: "양식" },
+    { name: "파스타", emoji: "🍝", cat: "양식" },
+    { name: "피자", emoji: "🍕", cat: "양식" },
+    { name: "스테이크", emoji: "🥩", cat: "양식" },
+    { name: "샐러드", emoji: "🥗", cat: "양식" },
+    { name: "리조또", emoji: "🍚", cat: "양식" },
+    { name: "샌드위치", emoji: "🥪", cat: "양식" },
+    { name: "부대찌개", emoji: "🍲", cat: "한식" },
+    { name: "닭갈비", emoji: "🐔", cat: "한식" },
+    { name: "찜닭", emoji: "🍗", cat: "한식" },
+    { name: "국밥", emoji: "🍚", cat: "한식" },
+    { name: "쭈꾸미볶음", emoji: "🦑", cat: "한식" },
+    { name: "곱창", emoji: "🍢", cat: "한식" },
+    { name: "보쌈", emoji: "🥬", cat: "한식" },
+    { name: "백반정식", emoji: "🍱", cat: "한식" },
+    { name: "타코", emoji: "🌮", cat: "양식" },
+    { name: "포케", emoji: "🥗", cat: "아시안" }
+  ];
+
+  var HIST_KEY = "lunchpick_history_v1";
+  var SET_KEY = "lunchpick_settings_v1";
+
+  // ---- 상태 ----
+  var current = null;       // 현재 화면에 추천된 메뉴
+  var sessionShown = [];    // 이번 세션에 "다른 거"로 거쳐간 메뉴 이름들
+
+  // ---- DOM ----
+  var $ = function (id) { return document.getElementById(id); };
+  var pickPlaceholder = $("pickPlaceholder"),
+      pickResult = $("pickResult"),
+      pickEmoji = $("pickEmoji"),
+      pickName = $("pickName"),
+      pickCat = $("pickCat"),
+      recommendBtn = $("recommendBtn"),
+      actionRow = $("actionRow"),
+      rerollBtn = $("rerollBtn"),
+      eatBtn = $("eatBtn"),
+      mapsBox = $("mapsBox"),
+      mapsMenu = $("mapsMenu"),
+      cooldownSel = $("cooldown"),
+      histList = $("histList"),
+      clearBtn = $("clearBtn"),
+      todayLabel = $("todayLabel");
+
+  // ---- 저장소 유틸 ----
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function saveHistory(h) {
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(h)); } catch (e) {}
+  }
+  function loadSettings() {
+    try { return JSON.parse(localStorage.getItem(SET_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function saveSettings(s) {
+    try { localStorage.setItem(SET_KEY, JSON.stringify(s)); } catch (e) {}
+  }
+
+  // ---- 날짜 유틸 ----
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
+  }
+  function daysAgoStr(n) {
+    var d = new Date();
+    d.setDate(d.getDate() - n);
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
+  }
+  function prettyDate(s) {
+    var p = s.split("-");
+    var wd = ["일", "월", "화", "수", "목", "금", "토"];
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    if (s === todayStr()) return "오늘";
+    if (s === daysAgoStr(1)) return "어제";
+    return (+p[1]) + "/" + (+p[2]) + " (" + wd[d.getDay()] + ")";
+  }
+
+  // ---- 최근 먹은 메뉴(쿨다운) ----
+  function recentMenuNames() {
+    var days = parseInt(cooldownSel.value, 10) || 5;
+    var cutoff = daysAgoStr(days - 1); // 오늘 포함 최근 days일
+    var h = loadHistory();
+    var names = {};
+    h.forEach(function (item) {
+      if (item.date >= cutoff) names[item.name] = true;
+    });
+    return names;
+  }
+
+  // ---- 추천 ----
+  function pickMenu() {
+    var recent = recentMenuNames();
+    // 1순위: 최근에도 안 먹고, 이번 세션에 안 보여준 메뉴
+    var pool = MENUS.filter(function (m) {
+      return !recent[m.name] && sessionShown.indexOf(m.name) === -1;
+    });
+    // 2순위: 최근에 안 먹은 메뉴 (세션 제외는 풀어줌)
+    if (pool.length === 0) {
+      pool = MENUS.filter(function (m) { return !recent[m.name]; });
+    }
+    // 3순위: 그래도 없으면 전체
+    if (pool.length === 0) pool = MENUS.slice();
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function showPick(menu) {
+    current = menu;
+    if (sessionShown.indexOf(menu.name) === -1) sessionShown.push(menu.name);
+
+    pickPlaceholder.hidden = true;
+    pickResult.hidden = false;
+    // 이모지 재애니메이션
+    pickEmoji.style.animation = "none";
+    void pickEmoji.offsetWidth;
+    pickEmoji.style.animation = "";
+    pickEmoji.textContent = menu.emoji;
+    pickName.textContent = menu.name;
+    pickCat.textContent = menu.cat;
+
+    recommendBtn.textContent = "🎲 다시 추천받기";
+    actionRow.hidden = false;
+    updateMaps(menu.name);
+  }
+
+  // ---- 주변 음식점 지도 검색 ----
+  function updateMaps(name) {
+    var q = encodeURIComponent(name);
+    mapsMenu.textContent = name;
+    $("mapKakao").href = "https://map.kakao.com/?q=" + q;
+    $("mapNaver").href = "https://m.map.naver.com/search2/search.naver?query=" + q;
+    $("mapGoogle").href = "https://www.google.com/maps/search/" + q;
+    mapsBox.hidden = false;
+  }
+
+  // ---- 기록 저장 / 렌더 ----
+  function eatCurrent() {
+    if (!current) return;
+    var h = loadHistory();
+    var today = todayStr();
+    // 오늘 기록이 있으면 교체, 없으면 추가
+    h = h.filter(function (item) { return item.date !== today; });
+    h.unshift({ date: today, name: current.name, emoji: current.emoji });
+    saveHistory(h);
+    renderHistory();
+
+    eatBtn.textContent = "✅ 저장됨!";
+    setTimeout(function () { eatBtn.textContent = "✅ 이거 먹을래요"; }, 1200);
+  }
+
+  function renderHistory() {
+    var h = loadHistory();
+    histList.innerHTML = "";
+    if (h.length === 0) {
+      var li = document.createElement("li");
+      li.className = "empty";
+      li.textContent = "아직 기록이 없어요. 메뉴를 골라 저장해 보세요!";
+      histList.appendChild(li);
+      return;
+    }
+    h.slice(0, 14).forEach(function (item) {
+      var li = document.createElement("li");
+      li.className = "hist-item";
+      var e = document.createElement("span"); e.className = "he"; e.textContent = item.emoji || "🍽️";
+      var n = document.createElement("span"); n.textContent = item.name;
+      var d = document.createElement("span"); d.className = "hd"; d.textContent = prettyDate(item.date);
+      li.appendChild(e); li.appendChild(n); li.appendChild(d);
+      histList.appendChild(li);
+    });
+  }
+
+  // ---- 이벤트 ----
+  recommendBtn.addEventListener("click", function () { showPick(pickMenu()); });
+  rerollBtn.addEventListener("click", function () { showPick(pickMenu()); });
+  eatBtn.addEventListener("click", eatCurrent);
+  clearBtn.addEventListener("click", function () {
+    if (confirm("점심 기록을 모두 지울까요?")) { saveHistory([]); renderHistory(); }
+  });
+  cooldownSel.addEventListener("change", function () {
+    var s = loadSettings(); s.cooldown = cooldownSel.value; saveSettings(s);
+    sessionShown = [];
+  });
+
+  // ---- 초기화 ----
+  function init() {
+    var s = loadSettings();
+    if (s.cooldown) cooldownSel.value = s.cooldown;
+    var wd = ["일", "월", "화", "수", "목", "금", "토"];
+    var now = new Date();
+    todayLabel.textContent = (now.getMonth() + 1) + "월 " + now.getDate() + "일 " + wd[now.getDay()] + "요일";
+    renderHistory();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
