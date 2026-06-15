@@ -18,6 +18,15 @@
         crossorigin="anonymous"></script>
 -->
 
+<!-- =========================================================
+     [Google Analytics 4] 연동 방법
+     1) https://analytics.google.com 에서 속성(GA4) 만들기
+     2) "데이터 스트림 > 웹"에서 측정 ID(G-XXXXXXXXXX) 복사
+     3) 아래 스크립트의 GA_MEASUREMENT_ID 를 본인 측정 ID로 교체
+     ID를 넣기 전(GA_MEASUREMENT_ID 그대로)에는 자동으로 비활성화됩니다.
+     방문자 통계 외에 '메뉴 추천/선택' 커스텀 이벤트도 자동 전송됩니다.
+========================================================== -->
+
 <style>
   :root {
     --bg: #fff7f0;
@@ -216,6 +225,28 @@
 (function () {
   "use strict";
 
+  // ---- Google Analytics 4 ----
+  // 아래 값을 본인 측정 ID(G-XXXXXXXXXX)로 교체하면 자동으로 켜집니다.
+  var GA_MEASUREMENT_ID = "G-Y9PY4L9DF7";
+
+  function loadGA() {
+    // ID를 아직 안 넣었으면(기본값/G-로 시작 안 함) 비활성화
+    if (!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID.indexOf("G-") !== 0) return;
+    var s = document.createElement("script");
+    s.async = true;
+    s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_MEASUREMENT_ID;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag("js", new Date());
+    window.gtag("config", GA_MEASUREMENT_ID);
+  }
+
+  // 커스텀 이벤트 전송 (GA 미설정 시 무시됨)
+  function track(eventName, params) {
+    if (typeof window.gtag === "function") window.gtag("event", eventName, params || {});
+  }
+
   // ---- 메뉴 데이터 (카테고리별) ----
   var MENUS = [
     { name: "김치찌개", emoji: "🍲", cat: "한식" },
@@ -374,6 +405,7 @@
     recommendBtn.textContent = "🎲 다시 추천받기";
     actionRow.hidden = false;
     updateMaps(menu.name);
+    track("recommend_menu", { menu_name: menu.name, menu_category: menu.cat });
   }
 
   // ---- 주변 음식점 지도 검색 ----
@@ -396,6 +428,7 @@
     h.unshift({ date: today, name: current.name, emoji: current.emoji });
     saveHistory(h);
     renderHistory();
+    track("save_menu", { menu_name: current.name, menu_category: current.cat });
 
     eatBtn.textContent = "✅ 저장됨!";
     setTimeout(function () { eatBtn.textContent = "✅ 이거 먹을래요"; }, 1200);
@@ -436,6 +469,7 @@
 
   // ---- 초기화 ----
   function init() {
+    loadGA();
     var s = loadSettings();
     if (s.cooldown) cooldownSel.value = s.cooldown;
     var wd = ["일", "월", "화", "수", "목", "금", "토"];
