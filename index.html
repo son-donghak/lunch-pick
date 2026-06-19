@@ -4,14 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>오늘 점심 뭐 먹지? · 직장인 점심 추천</title>
-<meta name="description" content="매일 다른 점심 메뉴를 추천하고, 먹은 메뉴를 기록해 중복 없이 골라주는 직장인용 점심 추천 도구. (한국어/English)" />
+<meta name="description" content="매일 다른 점심 메뉴를 추천하고, 내 위치 반경 안의 식당을 찾아주는 직장인용 점심 추천 도구. (한국어/English)" />
 
 <!-- =========================================================
      [Google AdSense] 연동 방법
      1) https://adsense.google.com 에서 사이트 등록 후 승인받기
      2) 아래 ca-pub-0000000000000000 을 본인 게시자 ID로 교체
      3) 페이지 하단 <ins class="adsbygoogle"> 의 data-ad-slot 값도 교체
-     승인 전에는 광고가 비어 보일 수 있어요(정상).
 ========================================================== -->
 <!--
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000"
@@ -19,43 +18,37 @@
 -->
 
 <!-- =========================================================
-     [Google Analytics 4] 연동 방법
-     1) https://analytics.google.com 에서 속성(GA4) 만들기
-     2) "데이터 스트림 > 웹"에서 측정 ID(G-XXXXXXXXXX) 복사
-     3) 아래 스크립트의 GA_MEASUREMENT_ID 를 본인 측정 ID로 교체
-     ID를 넣기 전(GA_MEASUREMENT_ID 그대로)에는 자동으로 비활성화됩니다.
-     방문자 통계 외에 '메뉴 추천/선택' 커스텀 이벤트도 자동 전송됩니다.
+     [Google Analytics 4] : 아래 스크립트의 GA_MEASUREMENT_ID 를 본인 측정 ID로 교체
+     (기본값 그대로면 자동 비활성화)
+========================================================== -->
+
+<!-- =========================================================
+     [Kakao 지도 API] 실제 식당 검색용
+     1) https://developers.kakao.com → 내 애플리케이션 추가
+     2) 앱 키 > "JavaScript 키" 복사
+     3) 아래 스크립트의 KAKAO_JS_KEY 를 그 키로 교체
+     4) [중요] 카카오 개발자 콘솔 > 플랫폼 > Web 에
+        사이트 도메인 등록: https://son-donghak.github.io
+        (로컬 테스트 시 http://localhost:4178 도 추가)
+     키를 넣기 전(KAKAO_JS_KEY 그대로)에는 지도앱 검색으로 자동 폴백됩니다.
 ========================================================== -->
 
 <style>
   :root {
-    --bg: #fff7f0;
-    --card: #ffffff;
-    --ink: #2b2622;
-    --muted: #8a807a;
-    --line: #f0e6dc;
-    --brand: #ff6b35;
-    --brand-dark: #e85220;
-    --brand-soft: #fff0e8;
-    --ok: #2f9e57;
-    --shadow: 0 10px 30px rgba(255, 107, 53, 0.12);
-    --radius: 18px;
+    --bg: #fff7f0; --card: #ffffff; --ink: #2b2622; --muted: #8a807a; --line: #f0e6dc;
+    --brand: #ff6b35; --brand-dark: #e85220; --brand-soft: #fff0e8; --ok: #2f9e57;
+    --shadow: 0 10px 30px rgba(255, 107, 53, 0.12); --radius: 18px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }   /* class의 display 설정에 hidden이 묻히지 않도록 */
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
       "Malgun Gothic", "Noto Sans KR", sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    padding: 16px;
-    display: flex;
-    justify-content: center;
+    background: var(--bg); color: var(--ink); line-height: 1.6;
+    -webkit-font-smoothing: antialiased; padding: 16px; display: flex; justify-content: center;
   }
   .wrap { width: 100%; max-width: 460px; }
 
-  /* 언어 토글 */
   .lang-bar { display: flex; justify-content: flex-end; }
   .lang-btn {
     background: #fff; border: 1px solid var(--line); border-radius: 999px;
@@ -69,37 +62,37 @@
   header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
   .today { font-size: 12px; color: var(--brand-dark); font-weight: 600; margin-top: 6px; }
 
-  .card {
-    background: var(--card);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 22px;
-    margin-top: 16px;
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px; margin-top: 16px; }
+
+  /* 모드 탭 */
+  .modes { display: flex; gap: 6px; background: var(--bg); padding: 4px; border-radius: 12px; margin-bottom: 16px; }
+  .mode-tab {
+    flex: 1; border: none; background: transparent; padding: 9px; border-radius: 9px;
+    font-family: inherit; font-weight: 700; font-size: 14px; color: var(--muted); cursor: pointer; transition: all .15s;
   }
+  .mode-tab.active { background: #fff; color: var(--brand-dark); box-shadow: 0 2px 6px rgba(0,0,0,.07); }
+
+  /* 거리 슬라이더 */
+  .radius { margin-bottom: 16px; }
+  .radius .rl { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; text-align: center; font-weight: 700; }
+  .radius .rl b { color: var(--brand-dark); }
+  .radius input[type=range] { width: 100%; accent-color: var(--brand); height: 22px; }
 
   /* 추천 카드 */
   .pick { text-align: center; padding: 30px 22px; }
-  .pick .emoji {
-    font-size: 76px;
-    line-height: 1;
-    display: block;
-    margin-bottom: 10px;
-    animation: pop 0.35s cubic-bezier(.2,1.3,.5,1);
-  }
-  @keyframes pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .pick .emoji { font-size: 76px; line-height: 1; display: block; margin-bottom: 10px; animation: pop .35s cubic-bezier(.2,1.3,.5,1); }
+  @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .pick .name { font-size: 30px; font-weight: 800; letter-spacing: -0.8px; }
   .pick .cat { color: var(--muted); font-size: 13px; margin-top: 4px; }
   .pick .placeholder { color: var(--muted); font-size: 16px; padding: 20px 0; }
 
-  /* 버튼 */
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    border: none; border-radius: 12px; cursor: pointer;
-    font-family: inherit; font-weight: 700; font-size: 16px;
-    padding: 14px 18px; width: 100%;
-    transition: transform .08s ease, background .15s ease, box-shadow .15s ease;
+    border: none; border-radius: 12px; cursor: pointer; font-family: inherit; font-weight: 700;
+    font-size: 16px; padding: 14px 18px; width: 100%; transition: transform .08s, background .15s, box-shadow .15s;
   }
-  .btn:active { transform: scale(0.98); }
+  .btn:active { transform: scale(.98); }
+  .btn:disabled { opacity: .6; cursor: default; }
   .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 6px 16px rgba(255,107,53,.35); }
   .btn-primary:hover { background: var(--brand-dark); }
   .btn-ghost { background: var(--brand-soft); color: var(--brand-dark); }
@@ -108,57 +101,60 @@
   .btn-row { display: flex; gap: 10px; margin-top: 12px; }
   .btn-row .btn { font-size: 15px; padding: 13px 10px; }
 
-  /* 지도 검색 */
-  .maps { margin-top: 16px; }
+  /* 지도앱 폴백 */
+  .maps { margin-top: 14px; }
   .maps .label { font-size: 13px; color: var(--muted); margin-bottom: 8px; text-align: center; }
   .map-row { display: flex; gap: 8px; }
   .map-btn {
-    flex: 1; text-align: center; text-decoration: none;
-    border: 1px solid var(--line); border-radius: 11px;
-    padding: 11px 6px; font-size: 13px; font-weight: 700; color: var(--ink);
-    background: #fff; transition: background .15s;
+    flex: 1; text-align: center; text-decoration: none; border: 1px solid var(--line);
+    border-radius: 11px; padding: 11px 6px; font-size: 13px; font-weight: 700; color: var(--ink); background: #fff;
   }
   .map-btn:hover { background: var(--bg); }
   .map-btn span { display: block; font-size: 20px; margin-bottom: 2px; }
 
-  /* 설정 */
-  .settings { display: flex; align-items: center; justify-content: space-between; font-size: 14px; gap: 10px; }
-  .settings select {
-    font-family: inherit; font-size: 14px; padding: 7px 10px;
-    border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
-  }
+  /* 식당 검색 상태/결과 */
+  .place-status { text-align: center; color: var(--muted); font-size: 13.5px; padding: 16px 4px; }
+  .place-status a { color: var(--brand-dark); font-weight: 700; }
+  .reco { border: 2px solid var(--brand); background: var(--brand-soft); border-radius: 14px; padding: 14px; margin-top: 16px; }
+  .reco .rtag { font-size: 12px; color: var(--brand-dark); font-weight: 800; }
+  .reco .rname { font-size: 20px; font-weight: 800; margin-top: 3px; letter-spacing: -0.4px; }
+  .reco .rmeta { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .reco .rbtns { display: flex; gap: 8px; margin-top: 12px; }
+  .reco .rbtns .btn { font-size: 14px; padding: 11px 8px; }
+  .reco .rlink { display: inline-block; margin-top: 10px; font-size: 13px; color: var(--brand-dark); font-weight: 700; text-decoration: none; }
+  .list-title { font-size: 13px; color: var(--muted); margin-top: 16px; font-weight: 700; }
+  .place-list { list-style: none; margin-top: 6px; }
+  .place-list li { border-bottom: 1px solid var(--line); }
+  .place-list li:last-child { border-bottom: none; }
+  .place-list a { text-decoration: none; color: var(--ink); display: flex; align-items: baseline; gap: 8px; padding: 11px 0; }
+  .place-list .pn { font-weight: 700; font-size: 15px; }
+  .place-list .pc { font-size: 12px; color: var(--muted); }
+  .place-list .pd { font-size: 12px; color: var(--brand-dark); margin-left: auto; font-weight: 700; white-space: nowrap; }
 
-  /* 기록 */
+  .settings { display: flex; align-items: center; justify-content: space-between; font-size: 14px; gap: 10px; }
+  .settings select { font-family: inherit; font-size: 14px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+
   .sec-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .sec-title h2 { font-size: 15px; }
   .sec-title button { background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer; font-family: inherit; }
   .sec-title button:hover { color: var(--brand-dark); }
   .hist-list { list-style: none; }
-  .hist-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px;
-  }
+  .hist-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
   .hist-item:last-child { border-bottom: none; }
   .hist-item .he { font-size: 22px; }
   .hist-item .hd { color: var(--muted); font-size: 12px; margin-left: auto; }
   .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 16px 0; }
 
-  /* 광고 슬롯 */
   .ad-slot {
-    margin-top: 16px; min-height: 100px;
-    display: flex; align-items: center; justify-content: center;
-    background: #fff; border: 1px dashed var(--line); border-radius: 14px;
-    color: var(--muted); font-size: 12px; text-align: center; padding: 12px;
+    margin-top: 16px; min-height: 100px; display: flex; align-items: center; justify-content: center;
+    background: #fff; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: 12px; text-align: center; padding: 12px;
   }
-
   footer { text-align: center; color: var(--muted); font-size: 11px; padding: 22px 0 8px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="lang-bar">
-    <button class="lang-btn" id="langBtn">EN</button>
-  </div>
+  <div class="lang-bar"><button class="lang-btn" id="langBtn">EN</button></div>
 
   <header>
     <h1 id="title"></h1>
@@ -166,7 +162,7 @@
     <div class="today" id="todayLabel"></div>
   </header>
 
-  <!-- 추천 결과 -->
+  <!-- 메뉴 추천 카드 (메뉴 모드에서만 표시) -->
   <div class="card pick" id="pickCard">
     <div class="placeholder" id="pickPlaceholder"></div>
     <div id="pickResult" hidden>
@@ -176,15 +172,34 @@
     </div>
   </div>
 
-  <!-- 액션 -->
+  <!-- 컨트롤 카드 -->
   <div class="card">
-    <button class="btn btn-primary" id="recommendBtn"></button>
-    <div class="btn-row" id="actionRow" hidden>
-      <button class="btn btn-ghost" id="rerollBtn"></button>
-      <button class="btn btn-ok" id="eatBtn"></button>
+    <div class="modes">
+      <button class="mode-tab active" id="tabMenu"></button>
+      <button class="mode-tab" id="tabNearby"></button>
     </div>
 
-    <!-- 주변 음식점 찾기 -->
+    <div class="radius">
+      <span class="rl" id="radiusLabel"></span>
+      <input type="range" id="radius" min="100" max="2000" step="100" value="500" />
+    </div>
+
+    <!-- 메뉴 모드 -->
+    <div id="menuPanel">
+      <button class="btn btn-primary" id="recommendBtn"></button>
+      <div class="btn-row" id="actionRow" hidden>
+        <button class="btn btn-ghost" id="rerollBtn"></button>
+        <button class="btn btn-ok" id="eatBtn"></button>
+      </div>
+      <button class="btn btn-ghost" id="findMenuBtn" hidden style="margin-top:10px"></button>
+    </div>
+
+    <!-- 주변 식당 모드 -->
+    <div id="nearbyPanel" hidden>
+      <button class="btn btn-primary" id="findNearbyBtn"></button>
+    </div>
+
+    <!-- 지도앱 폴백 (카카오 키 없을 때, 메뉴 모드) -->
     <div class="maps" id="mapsBox" hidden>
       <div class="label" id="mapsLabel"></div>
       <div class="map-row">
@@ -192,6 +207,14 @@
         <a class="map-btn" id="mapNaver" target="_blank" rel="noopener"><span>🟢</span><span id="lblNaver"></span></a>
         <a class="map-btn" id="mapGoogle" target="_blank" rel="noopener"><span>🔵</span><span id="lblGoogle"></span></a>
       </div>
+    </div>
+
+    <!-- 검색 상태/결과 -->
+    <div class="place-status" id="placeStatus" hidden></div>
+    <div id="placeResults" hidden>
+      <div class="reco" id="placeReco"></div>
+      <div class="list-title" id="listTitle"></div>
+      <ul class="place-list" id="placeList"></ul>
     </div>
   </div>
 
@@ -206,19 +229,8 @@
     </select>
   </div>
 
-  <!-- 광고 슬롯 (AdSense) -->
-  <div class="ad-slot" id="adSlot">
-    <span id="adLabel"></span>
-    <!-- 승인 후 위 주석 처리된 <script> 를 활성화하고, 아래를 사용하세요:
-    <ins class="adsbygoogle"
-         style="display:block"
-         data-ad-client="ca-pub-0000000000000000"
-         data-ad-slot="0000000000"
-         data-ad-format="auto"
-         data-full-width-responsive="true"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    -->
-  </div>
+  <!-- 광고 -->
+  <div class="ad-slot" id="adSlot"><span id="adLabel"></span></div>
 
   <!-- 기록 -->
   <div class="card">
@@ -236,216 +248,229 @@
 (function () {
   "use strict";
 
-  // ---- Google Analytics 4 ----
-  // 아래 값을 본인 측정 ID(G-XXXXXXXXXX)로 교체하면 자동으로 켜집니다.
+  // ====== Google Analytics 4 ======
   var GA_MEASUREMENT_ID = "G-Y9PY4L9DF7";
-
   function loadGA() {
     if (!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID.indexOf("G-") !== 0) return;
     var s = document.createElement("script");
-    s.async = true;
-    s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_MEASUREMENT_ID;
+    s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_MEASUREMENT_ID;
     document.head.appendChild(s);
     window.dataLayer = window.dataLayer || [];
     window.gtag = function () { window.dataLayer.push(arguments); };
-    window.gtag("js", new Date());
-    window.gtag("config", GA_MEASUREMENT_ID);
+    window.gtag("js", new Date()); window.gtag("config", GA_MEASUREMENT_ID);
   }
-  function track(eventName, params) {
-    if (typeof window.gtag === "function") window.gtag("event", eventName, params || {});
+  function track(n, p) { if (typeof window.gtag === "function") window.gtag("event", n, p || {}); }
+
+  // ====== Kakao 지도 API ======
+  var KAKAO_JS_KEY = "KAKAO_JS_KEY";   // ← 본인 JavaScript 키로 교체
+  function kakaoEnabled() { return KAKAO_JS_KEY && KAKAO_JS_KEY !== "KAKAO_JS_KEY"; }
+  var kakaoState = 0, kakaoCbs = []; // 0=미로드 1=로딩중 2=준비 -1=실패
+  function loadKakao(cb) {
+    if (!kakaoEnabled()) { cb(false); return; }
+    if (kakaoState === 2) { cb(true); return; }
+    if (kakaoState === -1) { cb(false); return; }
+    kakaoCbs.push(cb);
+    if (kakaoState === 1) return;
+    kakaoState = 1;
+    var s = document.createElement("script");
+    s.src = "https://dapi.kakao.com/v2/maps/sdk.js?autoload=false&libraries=services&appkey=" + KAKAO_JS_KEY;
+    s.onload = function () { window.kakao.maps.load(function () { kakaoState = 2; flushKakao(true); }); };
+    s.onerror = function () { kakaoState = -1; flushKakao(false); };
+    document.head.appendChild(s);
+  }
+  function flushKakao(ok) { var cbs = kakaoCbs; kakaoCbs = []; cbs.forEach(function (f) { f(ok); }); }
+
+  // 위치
+  var userPos = null;
+  function ensureLocation(cb) {
+    if (userPos) { cb(null, userPos); return; }
+    if (!navigator.geolocation) { cb("no-geo"); return; }
+    navigator.geolocation.getCurrentPosition(
+      function (p) { userPos = { lat: p.coords.latitude, lng: p.coords.longitude }; cb(null, userPos); },
+      function (e) { cb(e); },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    );
   }
 
-  // ---- 카테고리 (다국어) ----
+  // ====== 카테고리/메뉴 데이터 ======
   var CATS = {
-    korean:   { ko: "한식",   en: "Korean" },
-    snack:    { ko: "분식",   en: "Snacks" },
-    japanese: { ko: "일식",   en: "Japanese" },
-    chinese:  { ko: "중식",   en: "Chinese" },
-    asian:    { ko: "아시안", en: "Asian" },
-    western:  { ko: "양식",   en: "Western" }
+    korean: { ko: "한식", en: "Korean" }, snack: { ko: "분식", en: "Snacks" },
+    japanese: { ko: "일식", en: "Japanese" }, chinese: { ko: "중식", en: "Chinese" },
+    asian: { ko: "아시안", en: "Asian" }, western: { ko: "양식", en: "Western" }
   };
-
-  // ---- 메뉴 데이터 (id로 식별, 표시명은 다국어) ----
   var MENUS = [
-    { id: "kimchi_stew",   ko: "김치찌개",        en: "Kimchi Stew",            cat: "korean",   emoji: "🍲" },
-    { id: "doenjang_stew", ko: "된장찌개",        en: "Soybean Paste Stew",     cat: "korean",   emoji: "🥘" },
-    { id: "jeyuk",         ko: "제육볶음",        en: "Spicy Stir-fried Pork",  cat: "korean",   emoji: "🥓" },
-    { id: "bibimbap",      ko: "비빔밥",          en: "Bibimbap",               cat: "korean",   emoji: "🍚" },
-    { id: "bulgogi",       ko: "불고기",          en: "Bulgogi",                cat: "korean",   emoji: "🥩" },
-    { id: "sundubu",       ko: "순두부찌개",      en: "Soft Tofu Stew",         cat: "korean",   emoji: "🍜" },
-    { id: "samgyeopsal",   ko: "삼겹살",          en: "Pork Belly BBQ",         cat: "korean",   emoji: "🥓" },
-    { id: "galbitang",     ko: "갈비탕",          en: "Short Rib Soup",         cat: "korean",   emoji: "🍲" },
-    { id: "seolleongtang", ko: "설렁탕",          en: "Ox Bone Soup",           cat: "korean",   emoji: "🍲" },
-    { id: "naengmyeon",    ko: "냉면",            en: "Cold Noodles",           cat: "korean",   emoji: "🍜" },
-    { id: "kalguksu",      ko: "칼국수",          en: "Knife-cut Noodles",      cat: "korean",   emoji: "🍜" },
-    { id: "gimbap",        ko: "김밥",            en: "Gimbap",                 cat: "snack",    emoji: "🍙" },
-    { id: "tteokbokki",    ko: "떡볶이",          en: "Tteokbokki",             cat: "snack",    emoji: "🌶️" },
-    { id: "ramyeon",       ko: "라면",            en: "Ramyeon",                cat: "snack",    emoji: "🍜" },
-    { id: "donkatsu",      ko: "돈까스",          en: "Pork Cutlet",            cat: "japanese", emoji: "🍖" },
-    { id: "sushi",         ko: "초밥",            en: "Sushi",                  cat: "japanese", emoji: "🍣" },
-    { id: "udon",          ko: "우동",            en: "Udon",                   cat: "japanese", emoji: "🍲" },
-    { id: "ramen",         ko: "라멘",            en: "Ramen",                  cat: "japanese", emoji: "🍜" },
-    { id: "gyudon",        ko: "규동(소고기덮밥)", en: "Gyudon (Beef Bowl)",     cat: "japanese", emoji: "🍱" },
-    { id: "curry",         ko: "카레",            en: "Japanese Curry",         cat: "japanese", emoji: "🍛" },
-    { id: "jjajang",       ko: "짜장면",          en: "Jjajangmyeon",           cat: "chinese",  emoji: "🍜" },
-    { id: "jjamppong",     ko: "짬뽕",            en: "Jjamppong",              cat: "chinese",  emoji: "🍲" },
-    { id: "tangsuyuk",     ko: "탕수육",          en: "Sweet & Sour Pork",      cat: "chinese",  emoji: "🍖" },
-    { id: "malatang",      ko: "마라탕",          en: "Malatang",               cat: "chinese",  emoji: "🌶️" },
-    { id: "fried_rice",    ko: "볶음밥",          en: "Fried Rice",             cat: "chinese",  emoji: "🍚" },
-    { id: "pho",           ko: "쌀국수",          en: "Pho",                    cat: "asian",    emoji: "🍜" },
-    { id: "pad_thai",      ko: "팟타이",          en: "Pad Thai",               cat: "asian",    emoji: "🍝" },
-    { id: "bun_cha",       ko: "분짜",            en: "Bun Cha",                cat: "asian",    emoji: "🥗" },
-    { id: "burger",        ko: "햄버거",          en: "Burger",                 cat: "western",  emoji: "🍔" },
-    { id: "pasta",         ko: "파스타",          en: "Pasta",                  cat: "western",  emoji: "🍝" },
-    { id: "pizza",         ko: "피자",            en: "Pizza",                  cat: "western",  emoji: "🍕" },
-    { id: "steak",         ko: "스테이크",        en: "Steak",                  cat: "western",  emoji: "🥩" },
-    { id: "salad",         ko: "샐러드",          en: "Salad",                  cat: "western",  emoji: "🥗" },
-    { id: "risotto",       ko: "리조또",          en: "Risotto",                cat: "western",  emoji: "🍚" },
-    { id: "sandwich",      ko: "샌드위치",        en: "Sandwich",               cat: "western",  emoji: "🥪" },
-    { id: "budae",         ko: "부대찌개",        en: "Army Stew",              cat: "korean",   emoji: "🍲" },
-    { id: "dakgalbi",      ko: "닭갈비",          en: "Spicy Stir-fried Chicken", cat: "korean", emoji: "🐔" },
-    { id: "jjimdak",       ko: "찜닭",            en: "Braised Chicken",        cat: "korean",   emoji: "🍗" },
-    { id: "gukbap",        ko: "국밥",            en: "Soup with Rice",         cat: "korean",   emoji: "🍚" },
-    { id: "jjukkumi",      ko: "쭈꾸미볶음",      en: "Spicy Stir-fried Octopus", cat: "korean", emoji: "🦑" },
-    { id: "gopchang",      ko: "곱창",            en: "Grilled Tripe",          cat: "korean",   emoji: "🍢" },
-    { id: "bossam",        ko: "보쌈",            en: "Bossam (Boiled Pork)",   cat: "korean",   emoji: "🥬" },
-    { id: "baekban",       ko: "백반정식",        en: "Korean Set Meal",        cat: "korean",   emoji: "🍱" },
-    { id: "taco",          ko: "타코",            en: "Taco",                   cat: "western",  emoji: "🌮" },
-    { id: "poke",          ko: "포케",            en: "Poke Bowl",              cat: "asian",    emoji: "🥗" }
+    { id: "kimchi_stew", ko: "김치찌개", en: "Kimchi Stew", cat: "korean", emoji: "🍲" },
+    { id: "doenjang_stew", ko: "된장찌개", en: "Soybean Paste Stew", cat: "korean", emoji: "🥘" },
+    { id: "jeyuk", ko: "제육볶음", en: "Spicy Stir-fried Pork", cat: "korean", emoji: "🥓" },
+    { id: "bibimbap", ko: "비빔밥", en: "Bibimbap", cat: "korean", emoji: "🍚" },
+    { id: "bulgogi", ko: "불고기", en: "Bulgogi", cat: "korean", emoji: "🥩" },
+    { id: "sundubu", ko: "순두부찌개", en: "Soft Tofu Stew", cat: "korean", emoji: "🍜" },
+    { id: "samgyeopsal", ko: "삼겹살", en: "Pork Belly BBQ", cat: "korean", emoji: "🥓" },
+    { id: "galbitang", ko: "갈비탕", en: "Short Rib Soup", cat: "korean", emoji: "🍲" },
+    { id: "seolleongtang", ko: "설렁탕", en: "Ox Bone Soup", cat: "korean", emoji: "🍲" },
+    { id: "naengmyeon", ko: "냉면", en: "Cold Noodles", cat: "korean", emoji: "🍜" },
+    { id: "kalguksu", ko: "칼국수", en: "Knife-cut Noodles", cat: "korean", emoji: "🍜" },
+    { id: "gimbap", ko: "김밥", en: "Gimbap", cat: "snack", emoji: "🍙" },
+    { id: "tteokbokki", ko: "떡볶이", en: "Tteokbokki", cat: "snack", emoji: "🌶️" },
+    { id: "ramyeon", ko: "라면", en: "Ramyeon", cat: "snack", emoji: "🍜" },
+    { id: "donkatsu", ko: "돈까스", en: "Pork Cutlet", cat: "japanese", emoji: "🍖" },
+    { id: "sushi", ko: "초밥", en: "Sushi", cat: "japanese", emoji: "🍣" },
+    { id: "udon", ko: "우동", en: "Udon", cat: "japanese", emoji: "🍲" },
+    { id: "ramen", ko: "라멘", en: "Ramen", cat: "japanese", emoji: "🍜" },
+    { id: "gyudon", ko: "규동(소고기덮밥)", en: "Gyudon (Beef Bowl)", cat: "japanese", emoji: "🍱" },
+    { id: "curry", ko: "카레", en: "Japanese Curry", cat: "japanese", emoji: "🍛" },
+    { id: "jjajang", ko: "짜장면", en: "Jjajangmyeon", cat: "chinese", emoji: "🍜" },
+    { id: "jjamppong", ko: "짬뽕", en: "Jjamppong", cat: "chinese", emoji: "🍲" },
+    { id: "tangsuyuk", ko: "탕수육", en: "Sweet & Sour Pork", cat: "chinese", emoji: "🍖" },
+    { id: "malatang", ko: "마라탕", en: "Malatang", cat: "chinese", emoji: "🌶️" },
+    { id: "fried_rice", ko: "볶음밥", en: "Fried Rice", cat: "chinese", emoji: "🍚" },
+    { id: "pho", ko: "쌀국수", en: "Pho", cat: "asian", emoji: "🍜" },
+    { id: "pad_thai", ko: "팟타이", en: "Pad Thai", cat: "asian", emoji: "🍝" },
+    { id: "bun_cha", ko: "분짜", en: "Bun Cha", cat: "asian", emoji: "🥗" },
+    { id: "burger", ko: "햄버거", en: "Burger", cat: "western", emoji: "🍔" },
+    { id: "pasta", ko: "파스타", en: "Pasta", cat: "western", emoji: "🍝" },
+    { id: "pizza", ko: "피자", en: "Pizza", cat: "western", emoji: "🍕" },
+    { id: "steak", ko: "스테이크", en: "Steak", cat: "western", emoji: "🥩" },
+    { id: "salad", ko: "샐러드", en: "Salad", cat: "western", emoji: "🥗" },
+    { id: "risotto", ko: "리조또", en: "Risotto", cat: "western", emoji: "🍚" },
+    { id: "sandwich", ko: "샌드위치", en: "Sandwich", cat: "western", emoji: "🥪" },
+    { id: "budae", ko: "부대찌개", en: "Army Stew", cat: "korean", emoji: "🍲" },
+    { id: "dakgalbi", ko: "닭갈비", en: "Spicy Stir-fried Chicken", cat: "korean", emoji: "🐔" },
+    { id: "jjimdak", ko: "찜닭", en: "Braised Chicken", cat: "korean", emoji: "🍗" },
+    { id: "gukbap", ko: "국밥", en: "Soup with Rice", cat: "korean", emoji: "🍚" },
+    { id: "jjukkumi", ko: "쭈꾸미볶음", en: "Spicy Stir-fried Octopus", cat: "korean", emoji: "🦑" },
+    { id: "gopchang", ko: "곱창", en: "Grilled Tripe", cat: "korean", emoji: "🍢" },
+    { id: "bossam", ko: "보쌈", en: "Bossam (Boiled Pork)", cat: "korean", emoji: "🥬" },
+    { id: "baekban", ko: "백반정식", en: "Korean Set Meal", cat: "korean", emoji: "🍱" },
+    { id: "taco", ko: "타코", en: "Taco", cat: "western", emoji: "🌮" },
+    { id: "poke", ko: "포케", en: "Poke Bowl", cat: "asian", emoji: "🥗" }
   ];
 
-  // ---- UI 문구 (다국어) ----
+  // ====== UI 문구 ======
   var STR = {
     ko: {
-      htmlLang: "ko",
-      docTitle: "오늘 점심 뭐 먹지? · 직장인 점심 추천",
-      langBtn: "EN",
-      title: "🍱 오늘 점심 뭐 먹지?",
-      subtitle: "매일 다른 메뉴를 골라드려요. 먹은 건 기억해뒀다가 빼드릴게요.",
+      htmlLang: "ko", docTitle: "오늘 점심 뭐 먹지? · 직장인 점심 추천", langBtn: "EN",
+      title: "🍱 오늘 점심 뭐 먹지?", subtitle: "메뉴를 추천받고, 내 주변 식당까지 찾아드려요.",
+      tabMenu: "메뉴로 찾기", tabNearby: "주변 식당",
+      radius: function (m) { return "반경 <b>" + fmtDist(m) + "</b> 이내"; },
       placeholder: "아래 버튼을 눌러 오늘의 메뉴를 추천받아 보세요!",
-      recommend: "🎲 오늘의 점심 추천받기",
-      recommendAgain: "🎲 다시 추천받기",
-      other: "🔄 다른 거",
-      eat: "✅ 이거 먹을래요",
-      saved: "✅ 저장됨!",
+      recommend: "🎲 오늘의 점심 추천받기", recommendAgain: "🎲 다시 추천받기",
+      other: "🔄 다른 거", eat: "✅ 이거 먹을래요", saved: "✅ 저장됨!",
+      findMenu: "📍 이 메뉴 주변에서 찾기", findNearby: "📍 내 주변 식당 추천받기",
       mapsLabel: function (n) { return "내 주변에서 <b>" + n + "</b> 음식점 찾기"; },
       kakao: "카카오맵", naver: "네이버지도", google: "구글맵",
+      locating: "📡 내 위치 확인 중…", searching: "🔎 주변 식당을 찾는 중…",
+      locErr: "위치 정보를 가져올 수 없어요. 브라우저의 위치 권한을 허용해 주세요.",
+      noResults: function (n) { return (n ? "반경 안에 '" + n + "' 식당이 없어요." : "반경 안에 식당이 없어요.") + " 거리를 넓혀보세요."; },
+      searchErr: "검색 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.",
+      kakaoNote: "주변 식당 목록 기능은 카카오 지도 API 키를 설정하면 켜집니다.",
+      kakaoMapLink: "카카오맵에서 주변 음식점 보기 →",
+      recoTag: "📍 추천 식당", listTitle: "주변 더보기",
+      goHere: "✅ 여기 갈래요", anotherSpot: "🔄 다른 식당", placeInfo: "길찾기·상세 →",
+      away: function (m) { return fmtDist(m) + " 거리"; },
       settings: function (n) { return "최근 <b>" + n + "</b>간 먹은 메뉴는 추천 제외"; },
       cooldownOpt: function (n) { return n + "일"; },
       adLabel: "광고 영역 · AdSense 승인 후 이 자리에 광고가 표시됩니다",
-      histTitle: "📅 내가 먹은 점심",
-      clear: "기록 지우기",
+      histTitle: "📅 내가 먹은 점심", clear: "기록 지우기",
       empty: "아직 기록이 없어요. 메뉴를 골라 저장해 보세요!",
       footer: "내 브라우저에만 저장돼요(서버 전송 없음) · 매일 새 메뉴를 골라보세요 🍳",
-      confirmClear: "점심 기록을 모두 지울까요?",
-      today: "오늘", yesterday: "어제",
-      locale: "ko-KR"
+      confirmClear: "점심 기록을 모두 지울까요?", today: "오늘", yesterday: "어제", locale: "ko-KR"
     },
     en: {
-      htmlLang: "en",
-      docTitle: "What's for lunch today? · Lunch picker for workers",
-      langBtn: "한국어",
-      title: "🍱 What's for lunch today?",
-      subtitle: "We pick a different menu each day and remember what you've had.",
+      htmlLang: "en", docTitle: "What's for lunch today? · Lunch picker", langBtn: "한국어",
+      title: "🍱 What's for lunch today?", subtitle: "Get a menu pick and find restaurants near you.",
+      tabMenu: "By menu", tabNearby: "Nearby",
+      radius: function (m) { return "Within <b>" + fmtDist(m) + "</b>"; },
       placeholder: "Tap the button below to get today's lunch pick!",
-      recommend: "🎲 Pick today's lunch",
-      recommendAgain: "🎲 Pick again",
-      other: "🔄 Another",
-      eat: "✅ I'll eat this",
-      saved: "✅ Saved!",
+      recommend: "🎲 Pick today's lunch", recommendAgain: "🎲 Pick again",
+      other: "🔄 Another", eat: "✅ I'll eat this", saved: "✅ Saved!",
+      findMenu: "📍 Find this menu near me", findNearby: "📍 Recommend a spot near me",
       mapsLabel: function (n) { return "Find <b>" + n + "</b> near you"; },
       kakao: "Kakao Map", naver: "Naver Map", google: "Google Maps",
+      locating: "📡 Getting your location…", searching: "🔎 Searching nearby…",
+      locErr: "Couldn't get your location. Please allow location access in your browser.",
+      noResults: function (n) { return (n ? "No '" + n + "' restaurants in range." : "No restaurants in range.") + " Try a larger radius."; },
+      searchErr: "Something went wrong. Please try again.",
+      kakaoNote: "The nearby-restaurant list turns on once a Kakao Maps API key is set.",
+      kakaoMapLink: "Open nearby restaurants in Kakao Map →",
+      recoTag: "📍 Recommended", listTitle: "More nearby",
+      goHere: "✅ I'll go here", anotherSpot: "🔄 Another", placeInfo: "Directions & info →",
+      away: function (m) { return fmtDist(m) + " away"; },
       settings: function (n) { return "Exclude menus eaten in the last <b>" + n + "</b>"; },
       cooldownOpt: function (n) { return n + " days"; },
       adLabel: "Ad space · Your AdSense ad will appear here after approval",
-      histTitle: "📅 My lunch history",
-      clear: "Clear history",
+      histTitle: "📅 My lunch history", clear: "Clear history",
       empty: "No history yet. Pick a menu and save it!",
       footer: "Saved only in your browser (no server) · Pick a fresh menu every day 🍳",
-      confirmClear: "Clear all lunch history?",
-      today: "Today", yesterday: "Yesterday",
-      locale: "en-US"
+      confirmClear: "Clear all lunch history?", today: "Today", yesterday: "Yesterday", locale: "en-US"
     }
   };
 
-  var HIST_KEY = "lunchpick_history_v1";
-  var SET_KEY = "lunchpick_settings_v1";
+  var HIST_KEY = "lunchpick_history_v1", SET_KEY = "lunchpick_settings_v1";
+  var lang = "ko", mode = "menu";
+  var current = null, sessionShown = [];
+  var lastPlaces = [], recoPlace = null, lastKeyword = null;
 
-  // ---- 상태 ----
-  var lang = "ko";
-  var current = null;       // 현재 화면에 추천된 메뉴 객체
-  var sessionShown = [];    // 이번 세션에 거쳐간 메뉴 id
-
-  // ---- DOM ----
   var $ = function (id) { return document.getElementById(id); };
 
-  // ---- 저장소 ----
   function loadHistory() { try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch (e) { return []; } }
   function saveHistory(h) { try { localStorage.setItem(HIST_KEY, JSON.stringify(h)); } catch (e) {} }
   function loadSettings() { try { return JSON.parse(localStorage.getItem(SET_KEY)) || {}; } catch (e) { return {}; } }
   function saveSettings(s) { try { localStorage.setItem(SET_KEY, JSON.stringify(s)); } catch (e) {} }
 
-  // ---- 다국어 헬퍼 ----
   function t() { return STR[lang]; }
   function menuName(m) { return m[lang] || m.ko; }
   function catName(m) { var c = CATS[m.cat]; return c ? (c[lang] || c.ko) : ""; }
   function findMenu(id) { for (var i = 0; i < MENUS.length; i++) if (MENUS[i].id === id) return MENUS[i]; return null; }
+  function fmtDist(m) { return m >= 1000 ? (Math.round(m / 100) / 10) + "km" : m + "m"; }
+  function shortCat(c) { if (!c) return ""; var p = c.split(">"); return p[p.length - 1].trim(); }
+  function curRadius() { return parseInt($("radius").value, 10) || 500; }
 
-  // ---- 날짜 ----
-  function dstr(d) {
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-  }
+  function dstr(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function todayStr() { return dstr(new Date()); }
   function daysAgoStr(n) { var d = new Date(); d.setDate(d.getDate() - n); return dstr(d); }
   function prettyDate(s) {
     if (s === todayStr()) return t().today;
     if (s === daysAgoStr(1)) return t().yesterday;
     var p = s.split("-");
-    var d = new Date(+p[0], +p[1] - 1, +p[2]);
-    return d.toLocaleDateString(t().locale, { month: "short", day: "numeric", weekday: "short" });
+    return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(t().locale, { month: "short", day: "numeric", weekday: "short" });
   }
 
-  // ---- 최근 먹은 메뉴(쿨다운) ----
+  // ====== 메뉴 추천 ======
   function recentMenuIds() {
-    var days = parseInt($("cooldown").value, 10) || 5;
-    var cutoff = daysAgoStr(days - 1);
-    var ids = {};
-    loadHistory().forEach(function (item) { if (item.date >= cutoff && item.id) ids[item.id] = true; });
+    var days = parseInt($("cooldown").value, 10) || 5, cutoff = daysAgoStr(days - 1), ids = {};
+    loadHistory().forEach(function (it) { if (it.date >= cutoff && it.id) ids[it.id] = true; });
     return ids;
   }
-
-  // ---- 추천 ----
   function pickMenu() {
     var recent = recentMenuIds();
     var pool = MENUS.filter(function (m) { return !recent[m.id] && sessionShown.indexOf(m.id) === -1; });
-    if (pool.length === 0) pool = MENUS.filter(function (m) { return !recent[m.id]; });
-    if (pool.length === 0) pool = MENUS.slice();
+    if (!pool.length) pool = MENUS.filter(function (m) { return !recent[m.id]; });
+    if (!pool.length) pool = MENUS.slice();
     return pool[Math.floor(Math.random() * pool.length)];
   }
-
   function showPick(menu) {
     current = menu;
     if (sessionShown.indexOf(menu.id) === -1) sessionShown.push(menu.id);
+    clearPlaces();
     renderPick();
     track("recommend_menu", { menu_id: menu.id, menu_name: menu.ko, menu_category: menu.cat });
   }
-
   function renderPick() {
     if (!current) return;
-    $("pickPlaceholder").hidden = true;
-    $("pickResult").hidden = false;
-    var emo = $("pickEmoji");
-    emo.style.animation = "none"; void emo.offsetWidth; emo.style.animation = "";
-    emo.textContent = current.emoji;
+    $("pickPlaceholder").hidden = true; $("pickResult").hidden = false;
+    var e = $("pickEmoji"); e.style.animation = "none"; void e.offsetWidth; e.style.animation = "";
+    e.textContent = current.emoji;
     $("pickName").textContent = menuName(current);
     $("pickCat").textContent = catName(current);
     $("recommendBtn").textContent = t().recommendAgain;
     $("actionRow").hidden = false;
-    renderMaps();
+    if (kakaoEnabled()) { $("findMenuBtn").hidden = false; $("findMenuBtn").textContent = t().findMenu; $("mapsBox").hidden = true; }
+    else { $("findMenuBtn").hidden = true; renderMapsFallback(); }
   }
 
-  // ---- 주변 음식점 (검색은 한국어 키워드로: 한국 지도 서비스 결과가 정확) ----
-  function renderMaps() {
+  // 지도앱 폴백 (키 없을 때)
+  function renderMapsFallback() {
     if (!current) return;
     var q = encodeURIComponent(current.ko);
     $("mapKakao").href = "https://map.kakao.com/?q=" + q;
@@ -455,104 +480,197 @@
     $("mapsBox").hidden = false;
   }
 
-  // ---- 저장 / 기록 ----
-  function eatCurrent() {
-    if (!current) return;
-    var h = loadHistory();
-    var today = todayStr();
-    h = h.filter(function (item) { return item.date !== today; });
-    h.unshift({ date: today, id: current.id, name: current.ko, emoji: current.emoji });
-    saveHistory(h);
-    renderHistory();
-    track("save_menu", { menu_id: current.id, menu_name: current.ko, menu_category: current.cat });
-    $("eatBtn").textContent = t().saved;
-    setTimeout(function () { $("eatBtn").textContent = t().eat; }, 1200);
+  // ====== 식당 검색 ======
+  function clearPlaces() {
+    lastPlaces = []; recoPlace = null; lastKeyword = null;
+    $("placeResults").hidden = true; $("placeStatus").hidden = true;
+  }
+  function showStatus(html) { $("placeStatus").innerHTML = html; $("placeStatus").hidden = false; $("placeResults").hidden = true; }
+
+  function runSearch(menuObj) {
+    var keyword = menuObj ? menuObj.ko : null;
+    var displayName = menuObj ? menuName(menuObj) : null;
+    lastKeyword = keyword;
+    if (!kakaoEnabled()) {
+      if (menuObj) { renderMapsFallback(); }
+      else { showStatus(t().kakaoNote + '<br><a href="https://map.kakao.com/?q=' + encodeURIComponent("음식점") + '" target="_blank" rel="noopener">' + t().kakaoMapLink + "</a>"); }
+      return;
+    }
+    showStatus(t().locating);
+    loadKakao(function (ok) {
+      if (!ok) { showStatus(t().searchErr); return; }
+      ensureLocation(function (err, pos) {
+        if (err) { showStatus(t().locErr); return; }
+        showStatus(t().searching);
+        var ps = new window.kakao.maps.services.Places();
+        var radius = curRadius();
+        var opts = { x: String(pos.lng), y: String(pos.lat), radius: radius, sort: window.kakao.maps.services.SortBy.DISTANCE, size: 15 };
+        var done = function (data, status) {
+          var S = window.kakao.maps.services.Status;
+          if (status === S.OK && data && data.length) {
+            lastPlaces = data;
+            recoPlace = data[Math.floor(Math.random() * data.length)];
+            renderPlaces();
+            track("find_restaurants", { mode: mode, radius: radius, keyword: keyword || "category", count: data.length });
+          } else if (status === S.ZERO_RESULT) {
+            showStatus(t().noResults(displayName));
+          } else {
+            showStatus(t().searchErr);
+          }
+        };
+        if (keyword) ps.keywordSearch(keyword, done, opts);
+        else ps.categorySearch("FD6", done, opts);
+      });
+    });
   }
 
+  function renderPlaces() {
+    if (!recoPlace) return;
+    $("placeStatus").hidden = true;
+    // 추천 식당 카드
+    var r = recoPlace;
+    var reco = $("placeReco");
+    reco.innerHTML = "";
+    var tag = el("div", "rtag", t().recoTag);
+    var name = el("div", "rname", r.place_name);
+    var meta = el("div", "rmeta", shortCat(r.category_name) + " · " + t().away(parseInt(r.distance, 10) || 0));
+    var btns = document.createElement("div"); btns.className = "rbtns";
+    var goBtn = document.createElement("button"); goBtn.className = "btn btn-ok"; goBtn.textContent = t().goHere;
+    goBtn.addEventListener("click", function () { saveSpot(r, goBtn); });
+    var anotherBtn = document.createElement("button"); anotherBtn.className = "btn btn-ghost"; anotherBtn.textContent = t().anotherSpot;
+    anotherBtn.addEventListener("click", pickAnotherSpot);
+    btns.appendChild(anotherBtn); btns.appendChild(goBtn);
+    var link = document.createElement("a"); link.className = "rlink"; link.href = r.place_url; link.target = "_blank"; link.rel = "noopener"; link.textContent = t().placeInfo;
+    reco.appendChild(tag); reco.appendChild(name); reco.appendChild(meta); reco.appendChild(btns); reco.appendChild(link);
+
+    // 목록
+    $("listTitle").textContent = t().listTitle;
+    var list = $("placeList"); list.innerHTML = "";
+    lastPlaces.slice(0, 8).forEach(function (p) {
+      var li = document.createElement("li");
+      var a = document.createElement("a"); a.href = p.place_url; a.target = "_blank"; a.rel = "noopener";
+      a.appendChild(el("span", "pn", p.place_name));
+      a.appendChild(el("span", "pc", shortCat(p.category_name)));
+      a.appendChild(el("span", "pd", fmtDist(parseInt(p.distance, 10) || 0)));
+      li.appendChild(a); list.appendChild(li);
+    });
+    $("placeResults").hidden = false;
+  }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  function pickAnotherSpot() {
+    if (lastPlaces.length <= 1) return;
+    var next;
+    do { next = lastPlaces[Math.floor(Math.random() * lastPlaces.length)]; } while (next === recoPlace && lastPlaces.length > 1);
+    recoPlace = next; renderPlaces();
+  }
+
+  function saveSpot(place, btn) {
+    var h = loadHistory(), today = todayStr();
+    h = h.filter(function (it) { return it.date !== today; });
+    h.unshift({ date: today, name: place.place_name, emoji: "📍" });
+    saveHistory(h); renderHistory();
+    track("save_place", { place_name: place.place_name });
+    if (btn) { btn.textContent = t().saved; setTimeout(function () { btn.textContent = t().goHere; }, 1200); }
+  }
+
+  // ====== 메뉴 저장/기록 ======
+  function eatCurrent() {
+    if (!current) return;
+    var h = loadHistory(), today = todayStr();
+    h = h.filter(function (it) { return it.date !== today; });
+    h.unshift({ date: today, id: current.id, name: current.ko, emoji: current.emoji });
+    saveHistory(h); renderHistory();
+    track("save_menu", { menu_id: current.id, menu_name: current.ko, menu_category: current.cat });
+    $("eatBtn").textContent = t().saved; setTimeout(function () { $("eatBtn").textContent = t().eat; }, 1200);
+  }
   function renderHistory() {
-    var h = loadHistory();
-    var list = $("histList");
-    list.innerHTML = "";
-    if (h.length === 0) {
-      var li = document.createElement("li");
-      li.className = "empty"; li.textContent = t().empty;
-      list.appendChild(li); return;
-    }
-    h.slice(0, 14).forEach(function (item) {
-      var m = item.id ? findMenu(item.id) : null;
-      var label = m ? menuName(m) : (item.name || "");
-      var li = document.createElement("li");
-      li.className = "hist-item";
-      var e = document.createElement("span"); e.className = "he"; e.textContent = item.emoji || "🍽️";
-      var n = document.createElement("span"); n.textContent = label;
-      var d = document.createElement("span"); d.className = "hd"; d.textContent = prettyDate(item.date);
-      li.appendChild(e); li.appendChild(n); li.appendChild(d);
+    var h = loadHistory(), list = $("histList"); list.innerHTML = "";
+    if (!h.length) { list.appendChild(el("li", "empty", t().empty)); return; }
+    h.slice(0, 14).forEach(function (it) {
+      var m = it.id ? findMenu(it.id) : null;
+      var li = document.createElement("li"); li.className = "hist-item";
+      li.appendChild(el("span", "he", it.emoji || "🍽️"));
+      li.appendChild(el("span", null, m ? menuName(m) : (it.name || "")));
+      li.appendChild(el("span", "hd", prettyDate(it.date)));
       list.appendChild(li);
     });
   }
 
-  // ---- 언어 적용 ----
+  // ====== 모드 전환 ======
+  function switchMode(m) {
+    mode = m;
+    var s = loadSettings(); s.mode = m; saveSettings(s);
+    $("tabMenu").classList.toggle("active", m === "menu");
+    $("tabNearby").classList.toggle("active", m === "nearby");
+    $("pickCard").hidden = m !== "menu";
+    $("menuPanel").hidden = m !== "menu";
+    $("nearbyPanel").hidden = m !== "nearby";
+    $("mapsBox").hidden = true;
+    clearPlaces();
+    if (m === "menu" && current) renderPick();
+  }
+
+  // ====== 언어 적용 ======
   function applyLang() {
     var s = t();
-    document.documentElement.lang = s.htmlLang;
-    document.title = s.docTitle;
+    document.documentElement.lang = s.htmlLang; document.title = s.docTitle;
     $("langBtn").textContent = s.langBtn;
-    $("title").textContent = s.title;
-    $("subtitle").textContent = s.subtitle;
+    $("title").textContent = s.title; $("subtitle").textContent = s.subtitle;
+    $("tabMenu").textContent = s.tabMenu; $("tabNearby").textContent = s.tabNearby;
+    $("radiusLabel").innerHTML = s.radius(curRadius());
     $("pickPlaceholder").textContent = s.placeholder;
     $("recommendBtn").textContent = current ? s.recommendAgain : s.recommend;
-    $("rerollBtn").textContent = s.other;
-    $("eatBtn").textContent = s.eat;
-    $("lblKakao").textContent = s.kakao;
-    $("lblNaver").textContent = s.naver;
-    $("lblGoogle").textContent = s.google;
+    $("rerollBtn").textContent = s.other; $("eatBtn").textContent = s.eat;
+    $("findMenuBtn").textContent = s.findMenu; $("findNearbyBtn").textContent = s.findNearby;
+    $("lblKakao").textContent = s.kakao; $("lblNaver").textContent = s.naver; $("lblGoogle").textContent = s.google;
     $("settingsLabel").innerHTML = s.settings(s.cooldownOpt($("cooldown").value));
-    var opts = $("cooldown").options;
-    for (var i = 0; i < opts.length; i++) opts[i].textContent = s.cooldownOpt(opts[i].value);
+    var opts = $("cooldown").options; for (var i = 0; i < opts.length; i++) opts[i].textContent = s.cooldownOpt(opts[i].value);
     $("adLabel").textContent = s.adLabel;
-    $("histTitle").textContent = s.histTitle;
-    $("clearBtn").textContent = s.clear;
+    $("histTitle").textContent = s.histTitle; $("clearBtn").textContent = s.clear;
     $("footer").textContent = s.footer;
-
-    // 날짜 라벨
     var now = new Date();
-    $("todayLabel").textContent = now.toLocaleDateString(s.locale, { year: undefined, month: "long", day: "numeric", weekday: "long" });
-
-    if (current) renderPick();
+    $("todayLabel").textContent = now.toLocaleDateString(s.locale, { month: "long", day: "numeric", weekday: "long" });
+    if (current && mode === "menu") renderPick();
+    if (!$("placeResults").hidden && recoPlace) renderPlaces();
     renderHistory();
   }
-
   function setLang(next) {
-    lang = next;
-    var s = loadSettings(); s.lang = next; saveSettings(s);
-    applyLang();
-    track("change_language", { language: next });
+    lang = next; var s = loadSettings(); s.lang = next; saveSettings(s);
+    applyLang(); track("change_language", { language: next });
   }
 
-  // ---- 이벤트 ----
+  // ====== 이벤트 ======
   $("recommendBtn").addEventListener("click", function () { showPick(pickMenu()); });
   $("rerollBtn").addEventListener("click", function () { showPick(pickMenu()); });
   $("eatBtn").addEventListener("click", eatCurrent);
-  $("clearBtn").addEventListener("click", function () {
-    if (confirm(t().confirmClear)) { saveHistory([]); renderHistory(); }
-  });
+  $("findMenuBtn").addEventListener("click", function () { if (current) runSearch(current); });
+  $("findNearbyBtn").addEventListener("click", function () { runSearch(null); });
+  $("tabMenu").addEventListener("click", function () { switchMode("menu"); });
+  $("tabNearby").addEventListener("click", function () { switchMode("nearby"); });
+  $("radius").addEventListener("input", function () { $("radiusLabel").innerHTML = t().radius(curRadius()); });
+  $("clearBtn").addEventListener("click", function () { if (confirm(t().confirmClear)) { saveHistory([]); renderHistory(); } });
   $("cooldown").addEventListener("change", function () {
-    var s = loadSettings(); s.cooldown = $("cooldown").value; saveSettings(s);
-    sessionShown = [];
+    var s = loadSettings(); s.cooldown = $("cooldown").value; saveSettings(s); sessionShown = [];
     $("settingsLabel").innerHTML = t().settings(t().cooldownOpt($("cooldown").value));
   });
   $("langBtn").addEventListener("click", function () { setLang(lang === "ko" ? "en" : "ko"); });
 
-  // ---- 초기화 ----
+  // ====== 초기화 ======
   function init() {
     loadGA();
     var s = loadSettings();
     if (s.cooldown) $("cooldown").value = s.cooldown;
-    // 언어: 저장값 > 브라우저 언어 > 한국어
+    if (s.radius) $("radius").value = s.radius;
     if (s.lang === "ko" || s.lang === "en") lang = s.lang;
     else lang = (navigator.language || "ko").toLowerCase().indexOf("ko") === 0 ? "ko" : "en";
     applyLang();
+    switchMode(s.mode === "nearby" ? "nearby" : "menu");
   }
+  // radius 저장
+  document.getElementById("radius").addEventListener("change", function () {
+    var s = loadSettings(); s.radius = this.value; saveSettings(s);
+  });
   init();
 })();
 </script>
