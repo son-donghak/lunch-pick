@@ -126,11 +126,6 @@
   .hist-item .hd { color: var(--muted); font-size: 12px; margin-left: auto; }
   .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 16px 0; }
 
-  .ad-slot {
-    margin-top: 16px; min-height: 100px; display: flex; align-items: center; justify-content: center;
-    background: #fff; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: 12px; text-align: center; padding: 12px;
-  }
-
   /* 게시판 */
   .board-form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
   .board-form input, .board-form textarea {
@@ -148,6 +143,8 @@
   .board-item .bregion { font-size: 12px; font-weight: 800; color: var(--brand-dark); background: var(--brand-soft); border-radius: 999px; padding: 2px 8px; }
   .board-item .brest { font-weight: 700; font-size: 15px; }
   .board-item .bmeta { font-size: 11px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+  .board-item .bdel { background: none; border: none; color: var(--muted); font-size: 11px; font-family: inherit; cursor: pointer; text-decoration: underline; }
+  .board-item .bdel:hover { color: var(--brand-dark); }
   .board-item .breview { font-size: 13.5px; color: var(--ink); margin-top: 5px; white-space: pre-wrap; }
   .board-item .bnick { font-size: 11px; color: var(--muted); margin-top: 4px; }
   .board-status { text-align: center; color: var(--muted); font-size: 13px; padding: 10px 4px; }
@@ -190,8 +187,6 @@
   </div>
 
   <!-- 광고 -->
-  <div class="ad-slot" id="adSlot"><span id="adLabel"></span></div>
-
   <!-- 기록 -->
   <div class="card">
     <div class="sec-title">
@@ -246,6 +241,7 @@
         alter table posts enable row level security;
         create policy "anyone can read posts" on posts for select using (true);
         create policy "logged-in users can insert own posts" on posts for insert with check (auth.uid() = user_id);
+        create policy "users can delete own posts" on posts for delete using (auth.uid() = user_id);
 
         create table visits (
           id bigint generated always as identity primary key,
@@ -310,10 +306,16 @@
     if (!sb && window.supabase) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     return sb;
   }
+  function cleanUrl() {
+    if (window.location.hash || window.location.search) {
+      window.history.replaceState(null, "", window.location.origin + window.location.pathname);
+    }
+  }
   function loginWith(provider) {
     var client = getSb();
     if (!client) { alert(t().authDisabled); return; }
-    client.auth.signInWithOAuth({ provider: provider, options: { redirectTo: window.location.href } });
+    var base = window.location.origin + window.location.pathname;
+    client.auth.signInWithOAuth({ provider: provider, options: { redirectTo: base } });
   }
   function logout() {
     var client = getSb();
@@ -378,7 +380,6 @@
       recoTag: "📍 추천 식당", listTitle: "주변 더보기",
       goHere: "✅ 여기 갈래요", anotherSpot: "🔄 다른 식당", placeInfo: "길찾기·상세 →", saved: "✅ 저장됨!",
       away: function (m) { return fmtDist(m) + " 거리"; },
-      adLabel: "광고 영역 · AdSense 승인 후 이 자리에 광고가 표시됩니다",
       histTitle: "📅 내가 다녀온 식당", clear: "기록 지우기",
       empty: "아직 기록이 없어요. 식당을 골라 저장해 보세요!",
       footer: "🍳",
@@ -395,7 +396,8 @@
       loginGoogle: "G 로그인", loginKakao: "K 로그인", logout: "로그아웃",
       loginRequiredBoard: "후기를 남기려면 로그인이 필요해요.",
       loginRequiredHist: "로그인하면 다녀온 식당이 내 계정에 저장돼요.",
-      authDisabled: "로그인 기능은 Supabase 연동 후 사용할 수 있어요."
+      authDisabled: "로그인 기능은 Supabase 연동 후 사용할 수 있어요.",
+      boardDelete: "삭제", boardConfirmDelete: "이 후기를 삭제할까요?"
     },
     en: {
       htmlLang: "en", docTitle: "What's for lunch today? · Lunch picker", langBtn: "한국어",
@@ -411,7 +413,6 @@
       recoTag: "📍 Recommended", listTitle: "More nearby",
       goHere: "✅ I'll go here", anotherSpot: "🔄 Another", placeInfo: "Directions & info →", saved: "✅ Saved!",
       away: function (m) { return fmtDist(m) + " away"; },
-      adLabel: "Ad space · Your AdSense ad will appear here after approval",
       histTitle: "📅 My visited spots", clear: "Clear history",
       empty: "No history yet. Pick a spot and save it!",
       footer: "🍳",
@@ -428,7 +429,8 @@
       loginGoogle: "Sign in with G", loginKakao: "Sign in with K", logout: "Log out",
       loginRequiredBoard: "Sign in to post a review.",
       loginRequiredHist: "Sign in to save your visited spots to your account.",
-      authDisabled: "Sign-in will be available once Supabase is connected."
+      authDisabled: "Sign-in will be available once Supabase is connected.",
+      boardDelete: "Delete", boardConfirmDelete: "Delete this review?"
     }
   };
 
@@ -642,10 +644,27 @@
       head.appendChild(el("span", "bregion", p.region));
       head.appendChild(el("span", "brest", p.restaurant));
       head.appendChild(el("span", "bmeta", new Date(p.created_at).toLocaleDateString(t().locale, { month: "short", day: "numeric" })));
+      if (currentUser && p.user_id === currentUser.id) {
+        var delBtn = document.createElement("button");
+        delBtn.className = "bdel"; delBtn.textContent = t().boardDelete;
+        delBtn.addEventListener("click", function () { deleteBoardPost(p.id); });
+        head.appendChild(delBtn);
+      }
       li.appendChild(head);
       li.appendChild(el("div", "breview", p.review));
       list.appendChild(li);
     });
+  }
+
+  function deleteBoardPost(id) {
+    var client = getSb();
+    if (!client || !currentUser) return;
+    if (!confirm(t().boardConfirmDelete)) return;
+    client.from("posts").delete().eq("id", id).eq("user_id", currentUser.id)
+      .then(function (res) {
+        if (res.error) { alert(t().boardLoadErr); return; }
+        loadBoardPosts();
+      });
   }
 
   function submitBoardPost() {
@@ -676,7 +695,6 @@
     $("title").textContent = s.title; $("subtitle").textContent = s.subtitle;
     $("radiusLabel").innerHTML = s.radius(curRadius());
     $("findNearbyBtn").textContent = s.findNearby;
-    $("adLabel").textContent = s.adLabel;
     $("histTitle").textContent = s.histTitle; $("clearBtn").textContent = s.clear;
     $("footer").textContent = s.footer;
     var now = new Date();
@@ -734,11 +752,15 @@
       client.auth.getSession().then(function (res) {
         currentUser = res.data && res.data.session ? res.data.session.user : null;
         renderAuthUI(); loadVisits();
+        cleanUrl();
       });
       client.auth.onAuthStateChange(function (event, session) {
         currentUser = session ? session.user : null;
         renderAuthUI(); loadVisits();
+        cleanUrl();
       });
+    } else {
+      cleanUrl();
     }
   }
   init();
