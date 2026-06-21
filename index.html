@@ -78,6 +78,12 @@
   .radius .rl b { color: var(--brand-dark); }
   .radius input[type=range] { width: 100%; accent-color: var(--brand); height: 22px; }
 
+  /* 예산 */
+  .budget { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; font-size: 14px; font-weight: 700; color: var(--muted); }
+  .budget select { font-family: inherit; font-size: 14px; font-weight: 700; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+
+  .pick .price { color: var(--brand-dark); font-size: 13px; font-weight: 700; margin-top: 4px; }
+
   /* 추천 카드 */
   .pick { text-align: center; padding: 30px 22px; }
   .pick .emoji { font-size: 76px; line-height: 1; display: block; margin-bottom: 10px; animation: pop .35s cubic-bezier(.2,1.3,.5,1); }
@@ -169,6 +175,7 @@
       <span class="emoji" id="pickEmoji">🍚</span>
       <div class="name" id="pickName">메뉴</div>
       <div class="cat" id="pickCat"></div>
+      <div class="price" id="pickPrice"></div>
     </div>
   </div>
 
@@ -182,6 +189,16 @@
     <div class="radius">
       <span class="rl" id="radiusLabel"></span>
       <input type="range" id="radius" min="100" max="2000" step="100" value="500" />
+    </div>
+
+    <div class="budget">
+      <label for="budget" id="budgetLabel"></label>
+      <select id="budget">
+        <option value="10000"></option>
+        <option value="15000" selected></option>
+        <option value="20000"></option>
+        <option value="0"></option>
+      </select>
     </div>
 
     <!-- 메뉴 모드 -->
@@ -298,53 +315,73 @@
     japanese: { ko: "일식", en: "Japanese" }, chinese: { ko: "중식", en: "Chinese" },
     asian: { ko: "아시안", en: "Asian" }, western: { ko: "양식", en: "Western" }
   };
+  // price = 1인 점심 예상 가격(원, 추정치). 예산 필터/표시에만 사용.
   var MENUS = [
-    { id: "kimchi_stew", ko: "김치찌개", en: "Kimchi Stew", cat: "korean", emoji: "🍲" },
-    { id: "doenjang_stew", ko: "된장찌개", en: "Soybean Paste Stew", cat: "korean", emoji: "🥘" },
-    { id: "jeyuk", ko: "제육볶음", en: "Spicy Stir-fried Pork", cat: "korean", emoji: "🥓" },
-    { id: "bibimbap", ko: "비빔밥", en: "Bibimbap", cat: "korean", emoji: "🍚" },
-    { id: "bulgogi", ko: "불고기", en: "Bulgogi", cat: "korean", emoji: "🥩" },
-    { id: "sundubu", ko: "순두부찌개", en: "Soft Tofu Stew", cat: "korean", emoji: "🍜" },
-    { id: "samgyeopsal", ko: "삼겹살", en: "Pork Belly BBQ", cat: "korean", emoji: "🥓" },
-    { id: "galbitang", ko: "갈비탕", en: "Short Rib Soup", cat: "korean", emoji: "🍲" },
-    { id: "seolleongtang", ko: "설렁탕", en: "Ox Bone Soup", cat: "korean", emoji: "🍲" },
-    { id: "naengmyeon", ko: "냉면", en: "Cold Noodles", cat: "korean", emoji: "🍜" },
-    { id: "kalguksu", ko: "칼국수", en: "Knife-cut Noodles", cat: "korean", emoji: "🍜" },
-    { id: "gimbap", ko: "김밥", en: "Gimbap", cat: "snack", emoji: "🍙" },
-    { id: "tteokbokki", ko: "떡볶이", en: "Tteokbokki", cat: "snack", emoji: "🌶️" },
-    { id: "ramyeon", ko: "라면", en: "Ramyeon", cat: "snack", emoji: "🍜" },
-    { id: "donkatsu", ko: "돈까스", en: "Pork Cutlet", cat: "japanese", emoji: "🍖" },
-    { id: "sushi", ko: "초밥", en: "Sushi", cat: "japanese", emoji: "🍣" },
-    { id: "udon", ko: "우동", en: "Udon", cat: "japanese", emoji: "🍲" },
-    { id: "ramen", ko: "라멘", en: "Ramen", cat: "japanese", emoji: "🍜" },
-    { id: "gyudon", ko: "규동(소고기덮밥)", en: "Gyudon (Beef Bowl)", cat: "japanese", emoji: "🍱" },
-    { id: "curry", ko: "카레", en: "Japanese Curry", cat: "japanese", emoji: "🍛" },
-    { id: "jjajang", ko: "짜장면", en: "Jjajangmyeon", cat: "chinese", emoji: "🍜" },
-    { id: "jjamppong", ko: "짬뽕", en: "Jjamppong", cat: "chinese", emoji: "🍲" },
-    { id: "tangsuyuk", ko: "탕수육", en: "Sweet & Sour Pork", cat: "chinese", emoji: "🍖" },
-    { id: "malatang", ko: "마라탕", en: "Malatang", cat: "chinese", emoji: "🌶️" },
-    { id: "fried_rice", ko: "볶음밥", en: "Fried Rice", cat: "chinese", emoji: "🍚" },
-    { id: "pho", ko: "쌀국수", en: "Pho", cat: "asian", emoji: "🍜" },
-    { id: "pad_thai", ko: "팟타이", en: "Pad Thai", cat: "asian", emoji: "🍝" },
-    { id: "bun_cha", ko: "분짜", en: "Bun Cha", cat: "asian", emoji: "🥗" },
-    { id: "burger", ko: "햄버거", en: "Burger", cat: "western", emoji: "🍔" },
-    { id: "pasta", ko: "파스타", en: "Pasta", cat: "western", emoji: "🍝" },
-    { id: "pizza", ko: "피자", en: "Pizza", cat: "western", emoji: "🍕" },
-    { id: "steak", ko: "스테이크", en: "Steak", cat: "western", emoji: "🥩" },
-    { id: "salad", ko: "샐러드", en: "Salad", cat: "western", emoji: "🥗" },
-    { id: "risotto", ko: "리조또", en: "Risotto", cat: "western", emoji: "🍚" },
-    { id: "sandwich", ko: "샌드위치", en: "Sandwich", cat: "western", emoji: "🥪" },
-    { id: "budae", ko: "부대찌개", en: "Army Stew", cat: "korean", emoji: "🍲" },
-    { id: "dakgalbi", ko: "닭갈비", en: "Spicy Stir-fried Chicken", cat: "korean", emoji: "🐔" },
-    { id: "jjimdak", ko: "찜닭", en: "Braised Chicken", cat: "korean", emoji: "🍗" },
-    { id: "gukbap", ko: "국밥", en: "Soup with Rice", cat: "korean", emoji: "🍚" },
-    { id: "jjukkumi", ko: "쭈꾸미볶음", en: "Spicy Stir-fried Octopus", cat: "korean", emoji: "🦑" },
-    { id: "gopchang", ko: "곱창", en: "Grilled Tripe", cat: "korean", emoji: "🍢" },
-    { id: "bossam", ko: "보쌈", en: "Bossam (Boiled Pork)", cat: "korean", emoji: "🥬" },
-    { id: "baekban", ko: "백반정식", en: "Korean Set Meal", cat: "korean", emoji: "🍱" },
-    { id: "taco", ko: "타코", en: "Taco", cat: "western", emoji: "🌮" },
-    { id: "poke", ko: "포케", en: "Poke Bowl", cat: "asian", emoji: "🥗" }
+    { id: "kimchi_stew", ko: "김치찌개", en: "Kimchi Stew", cat: "korean", emoji: "🍲", price: 8000 },
+    { id: "doenjang_stew", ko: "된장찌개", en: "Soybean Paste Stew", cat: "korean", emoji: "🥘", price: 8000 },
+    { id: "jeyuk", ko: "제육볶음", en: "Spicy Stir-fried Pork", cat: "korean", emoji: "🥓", price: 9000 },
+    { id: "bibimbap", ko: "비빔밥", en: "Bibimbap", cat: "korean", emoji: "🍚", price: 9000 },
+    { id: "bulgogi", ko: "불고기", en: "Bulgogi", cat: "korean", emoji: "🥩", price: 12000 },
+    { id: "sundubu", ko: "순두부찌개", en: "Soft Tofu Stew", cat: "korean", emoji: "🍜", price: 8000 },
+    { id: "samgyeopsal", ko: "삼겹살", en: "Pork Belly BBQ", cat: "korean", emoji: "🥓", price: 15000 },
+    { id: "galbitang", ko: "갈비탕", en: "Short Rib Soup", cat: "korean", emoji: "🍲", price: 11000 },
+    { id: "seolleongtang", ko: "설렁탕", en: "Ox Bone Soup", cat: "korean", emoji: "🍲", price: 10000 },
+    { id: "naengmyeon", ko: "냉면", en: "Cold Noodles", cat: "korean", emoji: "🍜", price: 10000 },
+    { id: "kalguksu", ko: "칼국수", en: "Knife-cut Noodles", cat: "korean", emoji: "🍜", price: 8000 },
+    { id: "gimbap", ko: "김밥", en: "Gimbap", cat: "snack", emoji: "🍙", price: 4000 },
+    { id: "tteokbokki", ko: "떡볶이", en: "Tteokbokki", cat: "snack", emoji: "🌶️", price: 5000 },
+    { id: "ramyeon", ko: "라면", en: "Ramyeon", cat: "snack", emoji: "🍜", price: 5000 },
+    { id: "donkatsu", ko: "돈까스", en: "Pork Cutlet", cat: "japanese", emoji: "🍖", price: 10000 },
+    { id: "sushi", ko: "초밥", en: "Sushi", cat: "japanese", emoji: "🍣", price: 15000 },
+    { id: "udon", ko: "우동", en: "Udon", cat: "japanese", emoji: "🍲", price: 8000 },
+    { id: "ramen", ko: "라멘", en: "Ramen", cat: "japanese", emoji: "🍜", price: 10000 },
+    { id: "gyudon", ko: "규동(소고기덮밥)", en: "Gyudon (Beef Bowl)", cat: "japanese", emoji: "🍱", price: 9000 },
+    { id: "curry", ko: "카레", en: "Japanese Curry", cat: "japanese", emoji: "🍛", price: 9000 },
+    { id: "jjajang", ko: "짜장면", en: "Jjajangmyeon", cat: "chinese", emoji: "🍜", price: 7000 },
+    { id: "jjamppong", ko: "짬뽕", en: "Jjamppong", cat: "chinese", emoji: "🍲", price: 9000 },
+    { id: "tangsuyuk", ko: "탕수육", en: "Sweet & Sour Pork", cat: "chinese", emoji: "🍖", price: 12000 },
+    { id: "malatang", ko: "마라탕", en: "Malatang", cat: "chinese", emoji: "🌶️", price: 11000 },
+    { id: "fried_rice", ko: "볶음밥", en: "Fried Rice", cat: "chinese", emoji: "🍚", price: 8000 },
+    { id: "pho", ko: "쌀국수", en: "Pho", cat: "asian", emoji: "🍜", price: 10000 },
+    { id: "pad_thai", ko: "팟타이", en: "Pad Thai", cat: "asian", emoji: "🍝", price: 11000 },
+    { id: "bun_cha", ko: "분짜", en: "Bun Cha", cat: "asian", emoji: "🥗", price: 11000 },
+    { id: "burger", ko: "햄버거", en: "Burger", cat: "western", emoji: "🍔", price: 8000 },
+    { id: "pasta", ko: "파스타", en: "Pasta", cat: "western", emoji: "🍝", price: 13000 },
+    { id: "pizza", ko: "피자", en: "Pizza", cat: "western", emoji: "🍕", price: 15000 },
+    { id: "steak", ko: "스테이크", en: "Steak", cat: "western", emoji: "🥩", price: 25000 },
+    { id: "salad", ko: "샐러드", en: "Salad", cat: "western", emoji: "🥗", price: 10000 },
+    { id: "risotto", ko: "리조또", en: "Risotto", cat: "western", emoji: "🍚", price: 13000 },
+    { id: "sandwich", ko: "샌드위치", en: "Sandwich", cat: "western", emoji: "🥪", price: 8000 },
+    { id: "budae", ko: "부대찌개", en: "Army Stew", cat: "korean", emoji: "🍲", price: 10000 },
+    { id: "dakgalbi", ko: "닭갈비", en: "Spicy Stir-fried Chicken", cat: "korean", emoji: "🐔", price: 13000 },
+    { id: "jjimdak", ko: "찜닭", en: "Braised Chicken", cat: "korean", emoji: "🍗", price: 14000 },
+    { id: "gukbap", ko: "국밥", en: "Soup with Rice", cat: "korean", emoji: "🍚", price: 9000 },
+    { id: "jjukkumi", ko: "쭈꾸미볶음", en: "Spicy Stir-fried Octopus", cat: "korean", emoji: "🦑", price: 12000 },
+    { id: "gopchang", ko: "곱창", en: "Grilled Tripe", cat: "korean", emoji: "🍢", price: 18000 },
+    { id: "bossam", ko: "보쌈", en: "Bossam (Boiled Pork)", cat: "korean", emoji: "🥬", price: 16000 },
+    { id: "baekban", ko: "백반정식", en: "Korean Set Meal", cat: "korean", emoji: "🍱", price: 9000 },
+    { id: "taco", ko: "타코", en: "Taco", cat: "western", emoji: "🌮", price: 10000 },
+    { id: "poke", ko: "포케", en: "Poke Bowl", cat: "asian", emoji: "🥗", price: 11000 }
   ];
+
+  // 비싼 업종 휴리스틱 (카카오는 가격을 안 주므로 카테고리/상호명으로 추정)
+  // p = 해당 업종의 1인 최소 추정가. 선택 예산보다 비싸면 주변 검색에서 제외.
+  var PRICEY = [
+    { kw: "오마카세", p: 40000 }, { kw: "대게", p: 40000 }, { kw: "킹크랩", p: 40000 }, { kw: "랍스터", p: 40000 },
+    { kw: "회", p: 25000 }, { kw: "횟집", p: 25000 }, { kw: "사시미", p: 25000 }, { kw: "물회", p: 20000 },
+    { kw: "장어", p: 25000 }, { kw: "한정식", p: 25000 }, { kw: "코스요리", p: 25000 }, { kw: "스테이크", p: 25000 },
+    { kw: "한우", p: 25000 }, { kw: "소고기", p: 20000 }, { kw: "뷔페", p: 20000 }, { kw: "부페", p: 20000 },
+    { kw: "샤브", p: 18000 }, { kw: "샤부", p: 18000 }, { kw: "초밥", p: 18000 }, { kw: "스시", p: 18000 }
+  ];
+  // 예산(maxBudget) 안에 드는 식당인가? (0 = 제한 없음)
+  function withinBudget(place, maxBudget) {
+    if (!maxBudget) return true;
+    var hay = (place.category_name || "") + " " + (place.place_name || "");
+    for (var i = 0; i < PRICEY.length; i++) {
+      if (hay.indexOf(PRICEY[i].kw) !== -1 && PRICEY[i].p > maxBudget) return false;
+    }
+    return true;
+  }
 
   // ====== UI 문구 ======
   var STR = {
@@ -368,6 +405,10 @@
       recoTag: "📍 추천 식당", listTitle: "주변 더보기",
       goHere: "✅ 여기 갈래요", anotherSpot: "🔄 다른 식당", placeInfo: "길찾기·상세 →",
       away: function (m) { return fmtDist(m) + " 거리"; },
+      budgetLabel: "1인 예산 (최대)",
+      budgetOpts: { "10000": "1만원 이하", "15000": "1.5만원 이하", "20000": "2만원 이하", "0": "상관없음" },
+      priceEst: function (p) { return "예상 1인 " + p.toLocaleString("ko-KR") + "원"; },
+      noResultsBudget: "예산·반경 안에 식당이 없어요. 예산을 올리거나 거리를 넓혀보세요.",
       settings: function (n) { return "최근 <b>" + n + "</b>간 먹은 메뉴는 추천 제외"; },
       cooldownOpt: function (n) { return n + "일"; },
       adLabel: "광고 영역 · AdSense 승인 후 이 자리에 광고가 표시됩니다",
@@ -396,6 +437,10 @@
       recoTag: "📍 Recommended", listTitle: "More nearby",
       goHere: "✅ I'll go here", anotherSpot: "🔄 Another", placeInfo: "Directions & info →",
       away: function (m) { return fmtDist(m) + " away"; },
+      budgetLabel: "Budget / person (max)",
+      budgetOpts: { "10000": "≤ ₩10,000", "15000": "≤ ₩15,000", "20000": "≤ ₩20,000", "0": "Any" },
+      priceEst: function (p) { return "≈ ₩" + p.toLocaleString("en-US") + " / person"; },
+      noResultsBudget: "No restaurants within budget & range. Raise the budget or radius.",
       settings: function (n) { return "Exclude menus eaten in the last <b>" + n + "</b>"; },
       cooldownOpt: function (n) { return n + " days"; },
       adLabel: "Ad space · Your AdSense ad will appear here after approval",
@@ -425,6 +470,7 @@
   function fmtDist(m) { return m >= 1000 ? (Math.round(m / 100) / 10) + "km" : m + "m"; }
   function shortCat(c) { if (!c) return ""; var p = c.split(">"); return p[p.length - 1].trim(); }
   function curRadius() { return parseInt($("radius").value, 10) || 500; }
+  function curBudget() { return parseInt($("budget").value, 10) || 0; } // 0 = 제한 없음
 
   function dstr(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function todayStr() { return dstr(new Date()); }
@@ -443,9 +489,11 @@
     return ids;
   }
   function pickMenu() {
-    var recent = recentMenuIds();
-    var pool = MENUS.filter(function (m) { return !recent[m.id] && sessionShown.indexOf(m.id) === -1; });
-    if (!pool.length) pool = MENUS.filter(function (m) { return !recent[m.id]; });
+    var recent = recentMenuIds(), budget = curBudget();
+    var inBudget = function (m) { return !budget || m.price <= budget; };
+    var pool = MENUS.filter(function (m) { return inBudget(m) && !recent[m.id] && sessionShown.indexOf(m.id) === -1; });
+    if (!pool.length) pool = MENUS.filter(function (m) { return inBudget(m) && !recent[m.id]; });
+    if (!pool.length) pool = MENUS.filter(inBudget);
     if (!pool.length) pool = MENUS.slice();
     return pool[Math.floor(Math.random() * pool.length)];
   }
@@ -463,6 +511,7 @@
     e.textContent = current.emoji;
     $("pickName").textContent = menuName(current);
     $("pickCat").textContent = catName(current);
+    $("pickPrice").textContent = t().priceEst(current.price);
     $("recommendBtn").textContent = t().recommendAgain;
     $("actionRow").hidden = false;
     if (kakaoEnabled()) { $("findMenuBtn").hidden = false; $("findMenuBtn").textContent = t().findMenu; $("mapsBox").hidden = true; }
@@ -505,13 +554,17 @@
         var ps = new window.kakao.maps.services.Places();
         var radius = curRadius();
         var opts = { x: String(pos.lng), y: String(pos.lat), radius: radius, sort: window.kakao.maps.services.SortBy.DISTANCE, size: 15 };
+        var budget = curBudget();
         var done = function (data, status) {
           var S = window.kakao.maps.services.Status;
           if (status === S.OK && data && data.length) {
+            // 주변(카테고리) 검색에서만 비싼 업종을 예산으로 거름
+            if (!keyword && budget) data = data.filter(function (p) { return withinBudget(p, budget); });
+            if (!data.length) { showStatus(t().noResultsBudget); return; }
             lastPlaces = data;
             recoPlace = data[Math.floor(Math.random() * data.length)];
             renderPlaces();
-            track("find_restaurants", { mode: mode, radius: radius, keyword: keyword || "category", count: data.length });
+            track("find_restaurants", { mode: mode, radius: radius, budget: budget, keyword: keyword || "category", count: data.length });
           } else if (status === S.ZERO_RESULT) {
             showStatus(t().noResults(displayName));
           } else {
@@ -619,6 +672,8 @@
     $("title").textContent = s.title; $("subtitle").textContent = s.subtitle;
     $("tabMenu").textContent = s.tabMenu; $("tabNearby").textContent = s.tabNearby;
     $("radiusLabel").innerHTML = s.radius(curRadius());
+    $("budgetLabel").textContent = s.budgetLabel;
+    var bopts = $("budget").options; for (var bi = 0; bi < bopts.length; bi++) bopts[bi].textContent = s.budgetOpts[bopts[bi].value];
     $("pickPlaceholder").textContent = s.placeholder;
     $("recommendBtn").textContent = current ? s.recommendAgain : s.recommend;
     $("rerollBtn").textContent = s.other; $("eatBtn").textContent = s.eat;
@@ -654,6 +709,9 @@
     var s = loadSettings(); s.cooldown = $("cooldown").value; saveSettings(s); sessionShown = [];
     $("settingsLabel").innerHTML = t().settings(t().cooldownOpt($("cooldown").value));
   });
+  $("budget").addEventListener("change", function () {
+    var s = loadSettings(); s.budget = $("budget").value; saveSettings(s); sessionShown = [];
+  });
   $("langBtn").addEventListener("click", function () { setLang(lang === "ko" ? "en" : "ko"); });
 
   // ====== 초기화 ======
@@ -662,6 +720,7 @@
     var s = loadSettings();
     if (s.cooldown) $("cooldown").value = s.cooldown;
     if (s.radius) $("radius").value = s.radius;
+    if (s.budget != null) $("budget").value = s.budget;
     if (s.lang === "ko" || s.lang === "en") lang = s.lang;
     else lang = (navigator.language || "ko").toLowerCase().indexOf("ko") === 0 ? "ko" : "en";
     applyLang();
