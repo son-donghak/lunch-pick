@@ -553,9 +553,14 @@
         showStatus(t().searching);
         var ps = new window.kakao.maps.services.Places();
         var radius = curRadius();
-        var opts = { x: String(pos.lng), y: String(pos.lat), radius: radius, sort: window.kakao.maps.services.SortBy.DISTANCE, size: 15 };
+        // var opts = { x: String(pos.lng), y: String(pos.lat), radius: radius, sort: window.kakao.maps.services.SortBy.DISTANCE, size: 15 };
+        // gssg - 거리 제한 오작동 문제 수정 start - [
+        var loc = new window.kakao.maps.LatLng(pos.lat, pos.lng);
+        var opts = { location: loc, x: String(pos.lng), y: String(pos.lat), radius: radius, sort: window.kakao.maps.services.SortBy.DISTANCE, size: 15 };
+        // ] - end
         var budget = curBudget();
         var done = function (data, status) {
+          // console.log("kakao status:", status, data); // gssg - 디버그용, 확인 후 제거
           var S = window.kakao.maps.services.Status;
           if (status === S.OK && data && data.length) {
             // 주변(카테고리) 검색에서만 비싼 업종을 예산으로 거름
